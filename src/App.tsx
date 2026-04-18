@@ -6,6 +6,8 @@ import Login from './pages/Login'
 import AuthCallback from './pages/AuthCallback'
 import CompletarRegistro from './pages/CompletarRegistro'
 import Dashboard from './pages/Dashboard'
+import Reservar from './pages/Reservar'
+import MisReservas from './pages/MisReservas'
 import Privacidad from './pages/Privacidad'
 
 export default function App() {
@@ -18,6 +20,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservar"
+            element={
+              <ProtectedRoute>
+                <Reservar />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mis-reservas"
+            element={
+              <ProtectedRoute>
+                <MisReservas />
               </ProtectedRoute>
             }
           />

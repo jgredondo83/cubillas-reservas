@@ -9,6 +9,41 @@ export type NivelPadel =
   | 'intermedio_alto'
   | 'avanzado'
 
+export type TipoRecurso = 'padel' | 'tenis' | 'club_social'
+
+export type EstadoReserva =
+  | 'confirmada'
+  | 'pendiente_pago'
+  | 'cancelada'
+  | 'completada'
+  | 'no_presentado'
+
+export interface VentanaHorario {
+  desde: string // HH:mm
+  hasta: string // HH:mm
+}
+
+export interface RecursoConfig {
+  duraciones_permitidas: number[]
+  horario: {
+    default: VentanaHorario[]
+    [dia: string]: VentanaHorario[]
+  }
+  antelacion_dias: number
+  antelacion_minima_dias?: number
+  max_reservas_activas_por_vivienda?: number
+  minutos_para_cancelar_sin_penalizacion?: number
+  coste_euros?: number
+  fianza_euros?: number
+  requiere_pago?: boolean
+  dias_limite_pago?: number
+  solo_admin?: boolean
+  horario_cruza_medianoche?: boolean
+  texto_post_reserva_clave?: string
+  comparte_espacio_con_tipo?: string
+  variante?: string
+}
+
 export interface Comunidad {
   id: string
   nombre: string
@@ -53,7 +88,52 @@ export interface Recurso {
   id: string
   comunidad_id: string
   nombre: string
-  tipo: 'padel' | 'tenis' | 'club_social'
+  tipo: TipoRecurso
   activo: boolean
-  config: Record<string, unknown>
+  espacio_id: string
+  config: RecursoConfig
+}
+
+export interface Reserva {
+  id: string
+  comunidad_id: string
+  recurso_id: string
+  usuario_id: string
+  vivienda_id: string
+  espacio_id: string
+  inicio: string
+  fin: string
+  estado: EstadoReserva
+  cancelado_en: string | null
+  cancelado_por: string | null
+  motivo_cancelacion: string | null
+  cancelo_tarde: boolean
+  notas: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Bloqueo {
+  id: string
+  recurso_id: string
+  inicio: string
+  fin: string
+  motivo: string
+  creado_por: string
+  created_at: string
+}
+
+export interface TextoAdmin {
+  id: string
+  comunidad_id: string
+  clave: string
+  contenido: string
+  updated_at: string
+}
+
+export interface FranjaOcupada {
+  recurso_id: string
+  inicio: string
+  fin: string
+  estado: string
 }

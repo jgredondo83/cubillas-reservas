@@ -18,7 +18,10 @@
       "Bash(magick -size 512x512 xc:'#0d9488' public/icons/icon-512x512.png)",
       "Bash(npx vite:*)",
       "Bash(lsof -ti:5173 -ti:5174)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(lsof -ti:5173)",
+      "Bash(supabase --version)",
+      "Bash(npx supabase:*)"
     ]
   }
 }
