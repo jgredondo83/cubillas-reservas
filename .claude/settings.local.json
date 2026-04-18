@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Read(//private/tmp/**)",
+      "Bash(rm -rf cubillas-tmp)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(npx create-vite@5 cubillas-tmp --template react-ts)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run:*)",
+      "Bash(npx --yes vite --host)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(brew install:*)",
+      "Bash(magick -size 192x192 xc:'#0d9488' public/icons/icon-192x192.png)",
+      "Bash(magick -size 512x512 xc:'#0d9488' public/icons/icon-512x512.png)"
+    ]
+  }
+}
