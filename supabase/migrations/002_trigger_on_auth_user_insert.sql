@@ -1,0 +1,17 @@
+-- 002_trigger_on_auth_user_insert.sql
+--
+-- DECISIÓN DE DISEÑO: NO se crea automáticamente una fila en public.usuarios
+-- cuando un usuario se registra en auth.users.
+--
+-- Motivo: queremos que el usuario complete un formulario de registro
+-- (nombre, apellidos, vivienda, consentimiento privacidad, etc.)
+-- antes de tener fila en public.usuarios. Esto nos permite:
+--   1. Recoger datos obligatorios que Supabase Auth no tiene.
+--   2. Registrar el consentimiento explícito de privacidad.
+--   3. Asignar vivienda desde el frontend.
+--
+-- El perfil se crea desde el frontend (INSERT a public.usuarios)
+-- tras completar el formulario en /completar-registro.
+--
+-- Si en el futuro se necesita un trigger (ej. para crear una fila
+-- "placeholder" o enviar un email de bienvenida), se añadirá aquí.
