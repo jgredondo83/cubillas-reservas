@@ -31,7 +31,7 @@ export default function GuardaDia() {
 
     const { data } = await supabase
       .from('reservas')
-      .select('*, recursos(nombre, tipo, config), usuarios(nombre, apellidos, telefono), viviendas(referencia)')
+      .select('*, recursos(nombre, tipo, config), usuarios!reservas_usuario_id_fkey(nombre, apellidos, telefono), viviendas(referencia)')
       .eq('comunidad_id', COMUNIDAD_ID)
       .gte('inicio', diaInicio.toISOString())
       .lte('inicio', diaFin.toISOString())

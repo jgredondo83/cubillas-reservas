@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { marcarAsistencia, cancelarReserva } from '../../lib/api'
 import { formatoHoraDesdeDate, formatoFechaLarga, cruzaMedianoche, emojiRecurso } from '../../lib/fechas'
+import TooltipBoton from '../ui/TooltipBoton'
 
 interface Recurso {
   nombre: string
@@ -41,23 +42,37 @@ interface Props {
   nombreGuarda?: string
 }
 
+const VENTANA_ANTES_MS = 60 * 60 * 1000   // 60 min
+const VENTANA_DESPUES_MS = 2 * 60 * 60 * 1000 // 2h
+
 export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
   const [cargando, setCargando] = useState(false)
   const [modalCancelar, setModalCancelar] = useState(false)
   const [motivoCancelacion, setMotivoCancelacion] = useState('')
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
 
-  const ahora = new Date()
-  const inicio = new Date(reserva.inicio)
-  const margenInicio = new Date(inicio.getTime() - 15 * 60 * 1000) // 15 min antes
-  const haEmpezado = ahora >= margenInicio
+  const ahoraMs = Date.now()
+  const inicioMs = new Date(reserva.inicio).getTime()
+  const finMs = new Date(reserva.fin).getTime()
   const cruza = cruzaMedianoche(reserva.inicio, reserva.fin)
+
+  // Ventana visual: [−60min inicio, fin+2h] para atenuación de tarjeta
+  const enVentanaVisual = ahoraMs >= inicioMs - VENTANA_ANTES_MS && ahoraMs <= finMs + VENTANA_DESPUES_MS
+  // No presentado: habilitado desde 60 min antes del inicio en adelante (sin límite posterior)
+  const yaEnVentana = ahoraMs >= inicioMs - VENTANA_ANTES_MS
+  const esEnFuturo = !yaEnVentana
 
   const esCancelada = reserva.estado === 'cancelada'
   const esMarcada = ['completada', 'no_presentado', 'pendiente_no_presentado'].includes(reserva.estado)
   const esActiva = ['confirmada', 'pendiente_pago'].includes(reserva.estado)
-  const puedeMarcar = (esActiva && haEmpezado) || reserva.estado === 'pendiente_no_presentado'
-  const noHaEmpezado = esActiva && !haEmpezado
+
+  // Presentado: siempre habilitado si esActiva
+  // No presentado: habilitado si yaEnVentana
+  // Cancelar: siempre habilitado si esActiva
+  const mostrarBotones = esActiva || reserva.estado === 'pendiente_no_presentado'
+
+  // Apariencia: atenuada si fuera de ventana visual
+  const fueraDeVentana = esActiva && !enVentanaVisual
 
   async function handleMarcar(resultado: 'presentado' | 'no_presentado' | 'deshacer') {
     setCargando(true)
@@ -91,18 +106,18 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
     onActualizar()
   }
 
-  // Estilos según estado
+  // Estilos según estado y ventana
   let cardClasses = 'rounded-xl p-4 mb-3 border '
   if (esCancelada) {
-    cardClasses += 'bg-slate-800/50 border-slate-700 opacity-60'
-  } else if (noHaEmpezado) {
-    cardClasses += 'bg-slate-700 border-slate-600 opacity-60'
+    cardClasses += 'bg-slate-800/50 border-slate-700 opacity-40'
   } else if (reserva.estado === 'completada') {
     cardClasses += 'bg-slate-700 border-teal-500/50'
   } else if (reserva.estado === 'no_presentado') {
     cardClasses += 'bg-slate-700 border-red-500/50'
   } else if (reserva.estado === 'pendiente_no_presentado') {
     cardClasses += 'bg-slate-700 border-amber-500/50'
+  } else if (fueraDeVentana) {
+    cardClasses += 'bg-slate-700 border-slate-600 opacity-60'
   } else {
     cardClasses += 'bg-slate-700 border-slate-600'
   }
@@ -170,8 +185,8 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
           <p className="text-xs text-red-400 mb-2">{errorAccion}</p>
         )}
 
-        {/* Botones: activa y ha empezado → presentado / no presentado / cancelar */}
-        {puedeMarcar && (
+        {/* Botones para reservas activas / pendiente_no_presentado */}
+        {mostrarBotones && (
           <div className="space-y-2">
             <div className="flex gap-2">
               <button
@@ -181,13 +196,23 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
               >
                 ✓ Se presentó
               </button>
-              <button
-                onClick={() => handleMarcar('no_presentado')}
-                disabled={cargando}
-                className="flex-1 h-14 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50 text-sm"
+              <TooltipBoton
+                texto="Disponible desde 60 min antes del inicio"
+                visible={!yaEnVentana}
+                className="flex-1"
               >
-                ✗ No se presentó
-              </button>
+                <button
+                  onClick={() => handleMarcar('no_presentado')}
+                  disabled={cargando || !yaEnVentana}
+                  className={`w-full h-14 font-medium rounded-lg transition-colors text-sm ${
+                    yaEnVentana
+                      ? 'bg-red-600 hover:bg-red-500 text-white disabled:opacity-50'
+                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  ✗ No se presentó
+                </button>
+              </TooltipBoton>
             </div>
             <button
               onClick={() => setModalCancelar(true)}
@@ -209,13 +234,6 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
             Deshacer marca
           </button>
         )}
-
-        {/* No ha empezado aún */}
-        {noHaEmpezado && (
-          <p className="text-xs text-slate-400 text-center mt-2">
-            Aún no ha empezado — los botones se activarán 15 min antes
-          </p>
-        )}
       </div>
 
       {/* Modal cancelar */}
@@ -226,6 +244,12 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
             <p className="text-sm text-slate-400 mb-4">
               Vas a cancelar la reserva de {reserva.usuarios.nombre} {reserva.usuarios.apellidos}. Esta acción quedará registrada a tu nombre como vigilante.
             </p>
+
+            {esEnFuturo && (
+              <div className="bg-amber-900/50 border border-amber-700 text-amber-200 text-sm p-3 rounded-lg mb-3">
+                Esta reserva aún no ha empezado. Cancelarla liberará la franja inmediatamente.
+              </div>
+            )}
 
             <textarea
               value={motivoCancelacion}

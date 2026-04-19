@@ -49,23 +49,6 @@ Deno.serve(async (req: Request) => {
       return respuesta(403, 'Completa tu registro primero')
     }
 
-    // 3. Cargar vivienda (del usuario objetivo)
-    const { data: vivienda } = await supabase
-      .from('viviendas')
-      .select('*')
-      .eq('id', perfilObjetivo.vivienda_id)
-      .single()
-
-    if (vivienda?.bloqueada_por_impago) {
-      return respuesta(403, vivienda.motivo_bloqueo || 'La vivienda tiene un bloqueo por impago. Contacta con administración.')
-    }
-
-    // 4. Usuario bloqueado
-    if (perfilObjetivo.bloqueado_hasta && new Date(perfilObjetivo.bloqueado_hasta) > new Date()) {
-      const hasta = new Date(perfilObjetivo.bloqueado_hasta).toLocaleDateString('es-ES')
-      return respuesta(403, `La cuenta está bloqueada hasta el ${hasta}`)
-    }
-
     // Parsear body
     const body: CrearReservaBody = await req.json()
     const { recurso_id, fecha, hora_inicio, duracion_minutos, usuario_id: targetUserId } = body
@@ -89,6 +72,49 @@ Deno.serve(async (req: Request) => {
         return respuesta(404, 'Usuario objetivo no encontrado')
       }
       perfilObjetivo = po
+    }
+
+    // 3. Cargar vivienda (del usuario objetivo)
+    const { data: vivienda } = await supabase
+      .from('viviendas')
+      .select('*')
+      .eq('id', perfilObjetivo.vivienda_id)
+      .single()
+
+    // Cargar datos de contacto de admin (para mensajes de error)
+    const { data: textoContacto } = await supabase
+      .from('textos_admin')
+      .select('contenido')
+      .eq('clave', 'datos_contacto_administracion')
+      .eq('comunidad_id', perfilObjetivo.comunidad_id)
+      .maybeSingle()
+    const datosContacto = textoContacto?.contenido ?? ''
+
+    const esEnNombreDe = perfilObjetivo.id !== user.id
+
+    if (vivienda?.bloqueada_por_impago) {
+      const motivo = vivienda.motivo_bloqueo || 'pagos pendientes'
+      const mensajePrincipal = esEnNombreDe
+        ? `La vivienda de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} tiene pagos pendientes: ${motivo}.`
+        : `Esta vivienda tiene pagos pendientes: ${motivo}.`
+      const instrucciones = esEnNombreDe
+        ? 'Un administrador puede gestionar el bloqueo desde el panel de admin.'
+        : `Contacta con administración para regularizar la situación. ${datosContacto}`
+      return respuesta(403, mensajePrincipal + '\n\n' + instrucciones)
+    }
+
+    // 4. Usuario bloqueado (se comprueba el objetivo, no el caller)
+    if (perfilObjetivo.bloqueado_hasta && new Date(perfilObjetivo.bloqueado_hasta) > new Date()) {
+      const fechaStr = new Date(perfilObjetivo.bloqueado_hasta).toLocaleDateString('es-ES', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid',
+      })
+      const mensajePrincipal = esEnNombreDe
+        ? `La cuenta de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} está bloqueada temporalmente hasta el ${fechaStr} por ausencias no justificadas.`
+        : `Tu cuenta está bloqueada temporalmente hasta el ${fechaStr} por ausencias no justificadas en los últimos 30 días.`
+      const instrucciones = esEnNombreDe
+        ? 'Un administrador puede desbloquear la cuenta desde el panel de admin si procede.'
+        : `Si crees que se trata de un error, ponte en contacto con administración. ${datosContacto}`
+      return respuesta(403, mensajePrincipal + '\n\n' + instrucciones)
     }
 
     // 5. Cargar recurso

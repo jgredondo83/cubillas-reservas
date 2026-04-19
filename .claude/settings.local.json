@@ -21,7 +21,9 @@
       "Bash(xargs kill:*)",
       "Bash(lsof -ti:5173)",
       "Bash(supabase --version)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(openssl rand:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

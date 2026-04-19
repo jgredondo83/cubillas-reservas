@@ -80,7 +80,7 @@ export default function CompletarRegistro() {
     if (!nombre.trim()) errores.nombre = 'El nombre es obligatorio'
     if (!apellidos.trim()) errores.apellidos = 'Los apellidos son obligatorios'
 
-    const telLimpio = telefono.replace(/[\s\-+34]/g, '')
+    const telLimpio = telefono.replace(/[\s\-]/g, '').replace(/^\+34/, '')
     if (!telLimpio || telLimpio.length < 9) {
       errores.telefono = 'El teléfono es obligatorio (mínimo 9 dígitos)'
     }

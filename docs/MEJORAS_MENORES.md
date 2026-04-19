@@ -19,3 +19,5 @@
 - [ ] `Reservar.tsx` / `generarFranjas` — Mostrar franjas pasadas del día actual como deshabilitadas (grises) en vez de ocultarlas, para que el usuario entienda por qué no puede reservar ciertas horas.
 
 - [x] `CompletarRegistro.tsx` — Cambiar ayuda del campo "Alias público". Arreglado en día 4.
+
+- [x] Mensajes de error cuando cuenta bloqueada o vivienda morosa ahora incluyen datos de contacto de administración, configurables desde textos_admin.

@@ -379,8 +379,12 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno }: Props = {}) {
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-4 rounded-lg mt-4">
-                {error}
+              <div className="bg-red-50 border border-red-200 text-sm p-4 rounded-lg mt-4">
+                {error.split('\n\n').map((parrafo, i) => (
+                  <p key={i} className={i === 0 ? 'text-red-700 font-medium' : 'text-red-600 text-sm mt-1'}>
+                    {parrafo}
+                  </p>
+                ))}
               </div>
             )}
 

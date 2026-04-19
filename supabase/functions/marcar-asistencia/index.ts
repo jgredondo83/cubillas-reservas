@@ -80,11 +80,6 @@ Deno.serve(async (req: Request) => {
 
       // Si el estado actual era no_presentado, decrementar contador
       if (reserva.estado === 'no_presentado') {
-        await supabase.rpc('decrementar_no_presentado', { p_usuario_id: reserva.usuario_id }).catch(() => {
-          // Si la función RPC no existe, hacerlo manualmente
-        })
-
-        // Decrementar manualmente
         const { data: dueno } = await supabase
           .from('usuarios')
           .select('no_presentado_count_30d')
