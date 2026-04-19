@@ -30,6 +30,7 @@ export interface CrearReservaParams {
   fecha: string
   hora_inicio: string
   duracion_minutos: number
+  usuario_id?: string
 }
 
 export interface CrearReservaResult {
@@ -48,4 +49,21 @@ export interface CancelarReservaParams {
 
 export function cancelarReserva(params: CancelarReservaParams) {
   return callFunction<{ fue_tardia: boolean }>('cancelar-reserva', params)
+}
+
+export interface MarcarAsistenciaParams {
+  reserva_id: string
+  resultado: 'presentado' | 'no_presentado' | 'deshacer'
+  nota?: string
+}
+
+export interface MarcarAsistenciaResult {
+  estado: string
+  accion: string
+  contador?: number
+  bloqueado?: boolean
+}
+
+export function marcarAsistencia(params: MarcarAsistenciaParams) {
+  return callFunction<MarcarAsistenciaResult>('marcar-asistencia', params)
 }

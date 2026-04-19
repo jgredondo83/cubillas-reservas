@@ -6,6 +6,7 @@ interface CrearReservaBody {
   fecha: string // YYYY-MM-DD
   hora_inicio: string // HH:mm
   duracion_minutos: number
+  usuario_id?: string // Solo para guarda/admin: crear reserva en nombre de otro
 }
 
 Deno.serve(async (req: Request) => {
@@ -48,29 +49,46 @@ Deno.serve(async (req: Request) => {
       return respuesta(403, 'Completa tu registro primero')
     }
 
-    // 3. Cargar vivienda
+    // 3. Cargar vivienda (del usuario objetivo)
     const { data: vivienda } = await supabase
       .from('viviendas')
       .select('*')
-      .eq('id', perfil.vivienda_id)
+      .eq('id', perfilObjetivo.vivienda_id)
       .single()
 
     if (vivienda?.bloqueada_por_impago) {
-      return respuesta(403, vivienda.motivo_bloqueo || 'Tu vivienda tiene un bloqueo por impago. Contacta con administración.')
+      return respuesta(403, vivienda.motivo_bloqueo || 'La vivienda tiene un bloqueo por impago. Contacta con administración.')
     }
 
     // 4. Usuario bloqueado
-    if (perfil.bloqueado_hasta && new Date(perfil.bloqueado_hasta) > new Date()) {
-      const hasta = new Date(perfil.bloqueado_hasta).toLocaleDateString('es-ES')
-      return respuesta(403, `Tu cuenta está bloqueada hasta el ${hasta}`)
+    if (perfilObjetivo.bloqueado_hasta && new Date(perfilObjetivo.bloqueado_hasta) > new Date()) {
+      const hasta = new Date(perfilObjetivo.bloqueado_hasta).toLocaleDateString('es-ES')
+      return respuesta(403, `La cuenta está bloqueada hasta el ${hasta}`)
     }
 
     // Parsear body
     const body: CrearReservaBody = await req.json()
-    const { recurso_id, fecha, hora_inicio, duracion_minutos } = body
+    const { recurso_id, fecha, hora_inicio, duracion_minutos, usuario_id: targetUserId } = body
 
     if (!recurso_id || !fecha || !hora_inicio || !duracion_minutos) {
       return respuesta(400, 'Faltan campos obligatorios: recurso_id, fecha, hora_inicio, duracion_minutos')
+    }
+
+    // Si se pide crear en nombre de otro usuario, verificar privilegios
+    let perfilObjetivo = perfil
+    if (targetUserId && targetUserId !== user.id) {
+      if (!['guarda', 'admin', 'super_admin'].includes(perfil.rol)) {
+        return respuesta(403, 'No tienes permiso para crear reservas en nombre de otro usuario')
+      }
+      const { data: po } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('id', targetUserId)
+        .maybeSingle()
+      if (!po) {
+        return respuesta(404, 'Usuario objetivo no encontrado')
+      }
+      perfilObjetivo = po
     }
 
     // 5. Cargar recurso
@@ -197,7 +215,7 @@ Deno.serve(async (req: Request) => {
       .from('reservas')
       .select('id', { count: 'exact', head: true })
       .eq('recurso_id', recurso_id)
-      .eq('vivienda_id', perfil.vivienda_id)
+      .eq('vivienda_id', perfilObjetivo.vivienda_id)
       .in('estado', ['confirmada', 'pendiente_pago'])
       .gte('fin', hoyISO)
 
@@ -212,10 +230,10 @@ Deno.serve(async (req: Request) => {
     const { data: reserva, error: insertError } = await supabase
       .from('reservas')
       .insert({
-        comunidad_id: perfil.comunidad_id,
+        comunidad_id: perfilObjetivo.comunidad_id,
         recurso_id,
-        usuario_id: user.id,
-        vivienda_id: perfil.vivienda_id,
+        usuario_id: perfilObjetivo.id,
+        vivienda_id: perfilObjetivo.vivienda_id,
         creado_por: user.id,
         inicio: inicioISO,
         fin: finISO,
@@ -240,7 +258,7 @@ Deno.serve(async (req: Request) => {
         .from('textos_admin')
         .select('contenido')
         .eq('clave', clave)
-        .eq('comunidad_id', perfil.comunidad_id)
+        .eq('comunidad_id', perfilObjetivo.comunidad_id)
         .maybeSingle()
       textoPostReserva = texto?.contenido ?? null
     }

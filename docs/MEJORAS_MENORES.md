@@ -18,4 +18,4 @@
 
 - [ ] `Reservar.tsx` / `generarFranjas` — Mostrar franjas pasadas del día actual como deshabilitadas (grises) en vez de ocultarlas, para que el usuario entienda por qué no puede reservar ciertas horas.
 
-- [ ] `CompletarRegistro.tsx` — Cambiar ayuda del campo "Alias público" a: "Solo es relevante en partidos abiertos de pádel. Si lo dejas vacío, otros vecinos te verán como Nombre + inicial del primer apellido."
+- [x] `CompletarRegistro.tsx` — Cambiar ayuda del campo "Alias público". Arreglado en día 4.

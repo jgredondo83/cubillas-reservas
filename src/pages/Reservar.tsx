@@ -18,7 +18,12 @@ type Paso = 'recurso' | 'duracion' | 'fecha' | 'franja' | 'confirmar' | 'exito'
 
 const COMUNIDAD_ID = '00000000-0000-0000-0000-000000000001'
 
-export default function Reservar() {
+interface Props {
+  usuarioObjetivo?: { id: string; nombre: string; apellidos: string }
+  rutaRetorno?: string
+}
+
+export default function Reservar({ usuarioObjetivo, rutaRetorno }: Props = {}) {
   const { perfil } = useAuth()
   const navigate = useNavigate()
 
@@ -163,6 +168,7 @@ export default function Reservar() {
       fecha: fechaISO(fechaSeleccionada),
       hora_inicio: franjaSeleccionada.horaInicio,
       duracion_minutos: duracion,
+      ...(usuarioObjetivo ? { usuario_id: usuarioObjetivo.id } : {}),
     })
 
     if (err) {
@@ -204,6 +210,13 @@ export default function Reservar() {
   return (
     <main className="min-h-screen bg-teal-50 py-6 px-4">
       <div className="max-w-md mx-auto">
+        {/* Banner reserva en nombre de otro */}
+        {usuarioObjetivo && (
+          <div className="bg-amber-900/50 border border-amber-700 text-amber-200 text-sm p-3 rounded-lg mb-4">
+            Creando reserva en nombre de <strong>{usuarioObjetivo.nombre} {usuarioObjetivo.apellidos}</strong>
+          </div>
+        )}
+
         {/* Header */}
         {paso !== 'exito' && (
           <div className="mb-6">
@@ -409,25 +422,27 @@ export default function Reservar() {
 
             <div className="space-y-3 mt-6">
               <button
-                onClick={() => navigate('/mis-reservas')}
+                onClick={() => navigate(rutaRetorno || '/mis-reservas')}
                 className="w-full h-12 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
               >
-                Mis reservas
+                {rutaRetorno ? 'Volver al panel' : 'Mis reservas'}
               </button>
-              <button
-                onClick={() => {
-                  setRecursoSeleccionado(null)
-                  setDuracion(0)
-                  setFechaSeleccionada(null)
-                  setFranjaSeleccionada(null)
-                  setError(null)
-                  setTextoExito(null)
-                  setPaso('recurso')
-                }}
-                className="w-full h-12 border border-teal-600 text-teal-600 font-medium rounded-lg hover:bg-teal-50 transition-colors"
-              >
-                Hacer otra reserva
-              </button>
+              {!rutaRetorno && (
+                <button
+                  onClick={() => {
+                    setRecursoSeleccionado(null)
+                    setDuracion(0)
+                    setFechaSeleccionada(null)
+                    setFranjaSeleccionada(null)
+                    setError(null)
+                    setTextoExito(null)
+                    setPaso('recurso')
+                  }}
+                  className="w-full h-12 border border-teal-600 text-teal-600 font-medium rounded-lg hover:bg-teal-50 transition-colors"
+                >
+                  Hacer otra reserva
+                </button>
+              )}
             </div>
           </div>
         )}

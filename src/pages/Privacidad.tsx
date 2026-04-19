@@ -19,7 +19,7 @@ export default function Privacidad() {
         <ul className="list-disc pl-5 text-gray-700 space-y-1">
           <li>Nombre y apellidos</li>
           <li>Dirección de email</li>
-          <li>Teléfono (opcional)</li>
+          <li>Teléfono (obligatorio)</li>
           <li>Alias público (opcional)</li>
           <li>Vivienda asociada</li>
           <li>Historial de reservas de instalaciones</li>
@@ -29,6 +29,9 @@ export default function Privacidad() {
         <p className="text-gray-700 leading-relaxed">
           Exclusivamente la gestión de reservas de instalaciones comunitarias (pistas de pádel, tenis y club social).
           No se utilizan los datos con fines comerciales ni publicitarios.
+        </p>
+        <p className="text-gray-700 leading-relaxed mt-2">
+          El teléfono es obligatorio para permitir al vigilante contactar contigo en caso de incidencia (cancelación de última hora, retraso, dudas en el acceso a la pista). No se utiliza para ningún otro fin. En contextos públicos (ranking, partidos abiertos) nunca se muestra el teléfono.
         </p>
 
         <h2 className="text-lg font-semibold text-gray-800 mt-6 mb-2">4. Base legal</h2>

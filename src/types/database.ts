@@ -17,6 +17,7 @@ export type EstadoReserva =
   | 'cancelada'
   | 'completada'
   | 'no_presentado'
+  | 'pendiente_no_presentado'
 
 export interface VentanaHorario {
   desde: string // HH:mm
@@ -71,7 +72,7 @@ export interface Usuario {
   nombre: string
   apellidos: string
   alias: string | null
-  telefono: string | null
+  telefono: string
   rol: RolUsuario
   estado: EstadoUsuario
   nivel_padel_autoevaluado: NivelPadel | null
@@ -109,6 +110,10 @@ export interface Reserva {
   motivo_cancelacion: string | null
   cancelo_tarde: boolean
   notas: string | null
+  estado_previo: string | null
+  marcado_presentado_por: string | null
+  marcado_en: string | null
+  creado_por: string
   created_at: string
   updated_at: string
 }

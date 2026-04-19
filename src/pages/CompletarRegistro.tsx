@@ -79,6 +79,12 @@ export default function CompletarRegistro() {
 
     if (!nombre.trim()) errores.nombre = 'El nombre es obligatorio'
     if (!apellidos.trim()) errores.apellidos = 'Los apellidos son obligatorios'
+
+    const telLimpio = telefono.replace(/[\s\-+34]/g, '')
+    if (!telLimpio || telLimpio.length < 9) {
+      errores.telefono = 'El teléfono es obligatorio (mínimo 9 dígitos)'
+    }
+
     if (!viviendaId) errores.vivienda = 'Selecciona tu vivienda'
     if (!privacidad) errores.privacidad = 'Debes aceptar la política de privacidad'
 
@@ -100,7 +106,7 @@ export default function CompletarRegistro() {
       nombre: nombre.trim(),
       apellidos: apellidos.trim(),
       alias: alias.trim() || null,
-      telefono: telefono.trim() || null,
+      telefono: telefono.trim(),
       rol: 'vecino',
       estado: 'pendiente',
       nivel_padel_autoevaluado: nivelPadel || null,
@@ -173,14 +179,14 @@ export default function CompletarRegistro() {
               className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
             />
             <p className="text-xs text-gray-400 mt-1">
-              Si lo dejas vacío, otros vecinos te verán como Nombre + inicial del primer apellido
+              Solo es relevante en partidos abiertos de pádel. Si lo dejas vacío, otros vecinos te verán como Nombre + inicial del primer apellido.
             </p>
           </div>
 
           {/* Teléfono */}
           <div>
             <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+              Teléfono *
             </label>
             <input
               id="telefono"
@@ -190,6 +196,10 @@ export default function CompletarRegistro() {
               placeholder="600 123 456"
               className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
             />
+            <p className="text-xs text-gray-400 mt-1">
+              El teléfono es obligatorio para que los vigilantes puedan contactarte en caso de incidencia.
+            </p>
+            {erroresCampo.telefono && <p className="text-sm text-red-600 mt-1">{erroresCampo.telefono}</p>}
           </div>
 
           {/* Vivienda */}

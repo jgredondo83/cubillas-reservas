@@ -16,49 +16,42 @@
 
 ### Completado
 
-**Migraciones SQL** (sin ejecutar, pendientes para Jaime):
-- `003_fn_franjas_ocupadas.sql` — función SECURITY DEFINER para consultar franjas ocupadas sin exponer datos sensibles
-- `004_timestamptz_reservas_y_espacio_id.sql` — modelo timestamptz (opción B) + espacio_id en recursos (opción A)
+**Migraciones SQL**:
+- `003_fn_franjas_ocupadas.sql` — función SECURITY DEFINER para franjas ocupadas
+- `004_timestamptz_reservas_y_espacio_id.sql` — timestamptz + espacio_id
+- `006_fix_horario_club_social_12h.sql` — fix ventana Club Social 12h
+- `007_columnas_cancelacion_reservas.sql` — columnas para cancelación
 
-**Edge Functions** (sin desplegar, pendientes para Jaime):
-- `crear-reserva` — validación exhaustiva (18 pasos): auth, perfil, vivienda morosa, bloqueo usuario, recurso, permisos admin, duración, timestamptz, antelación, horario, bloqueos admin, solapamiento por espacio_id, max activas por vivienda, estado inicial, insert con fallback exclusion constraint, texto post-reserva
-- `cancelar-reserva` — auth, permisos (propia o privilegiado), cálculo cancelación tardía, update estado
+**Edge Functions**:
+- `crear-reserva` — validación exhaustiva (18 pasos)
+- `cancelar-reserva` — auth, permisos, cancelación tardía
 
 **Frontend**:
-- `src/lib/fechas.ts` — helpers de formato (Intl.DateTimeFormat), generación de franjas con solapamiento, cruce medianoche
-- `src/lib/api.ts` — wrapper para llamadas a Edge Functions
-- `src/pages/Reservar.tsx` — wizard 5 pasos (recurso → duración → fecha → franja → confirmar) + pantalla éxito
-- `src/pages/MisReservas.tsx` — próximas y pasadas, cancelación con modal y motivo
-- `src/pages/Dashboard.tsx` — saludo, banner pendiente, botón reservar, 3 próximas reservas compactas, links
-- Tipos ampliados: Reserva, Bloqueo, TextoAdmin, RecursoConfig, FranjaOcupada
+- Wizard de reservas 5 pasos, MisReservas, Dashboard
 
-**Rutas nuevas**: `/reservar`, `/mis-reservas`
+## Día 4 — 19 de abril de 2026 ✅
+
+### Completado
+
+**Migración SQL** (pendiente de ejecutar):
+- `008_telefono_obligatorio_y_estado_previo.sql` — teléfono NOT NULL, estado_previo, marcado_presentado_por, marcado_en, constraint estados nuevos
+
+**Edge Functions** (pendientes de desplegar):
+- `marcar-asistencia` — presentado/no_presentado/deshacer con tracking guarda, penalización automática
+- `cron-marcar-no-presentados` — marca reservas pasadas como pendiente_no_presentado (no programada aún)
+- `crear-reserva` v5 — acepta usuario_id para reservas en nombre de otro (guarda/admin)
+
+**Frontend**:
+- Panel del guarda: GuardaHoy, GuardaDia (navegación entre días), GuardaNuevaReserva (buscador vecino + wizard)
+- TarjetaReservaGuarda con acciones: presentado, no presentado, cancelar, deshacer
+- Tema visual slate-800 diferenciado del teal del vecino
+- Role-based redirect (guarda → /guarda/hoy, admin → /admin, vecino → dashboard)
+- ProtectedRoute con rolesPermitidos
+- Teléfono obligatorio en CompletarRegistro con validación
+- Política de privacidad actualizada (teléfono obligatorio)
+- Placeholder /admin
+- Texto alias actualizado (mejora menor)
 
 ### Acciones pendientes para Jaime
 
-1. **Ejecutar SQL** en Supabase SQL Editor (en orden):
-   ```
-   supabase/migrations/003_fn_franjas_ocupadas.sql
-   supabase/migrations/004_timestamptz_reservas_y_espacio_id.sql
-   ```
-
-2. **Desplegar Edge Functions**:
-   ```bash
-   supabase functions deploy crear-reserva
-   supabase functions deploy cancelar-reserva
-   ```
-
-3. **RLS policies** necesarias:
-   - `reservas`: INSERT para authenticated donde `auth.uid() = usuario_id`
-   - `reservas`: SELECT para authenticated donde `auth.uid() = usuario_id`
-   - `reservas`: UPDATE para authenticated (solo cancelación propia)
-   - `recursos`: SELECT para authenticated
-   - `bloqueos`: SELECT para authenticated
-
-4. **Verificar** que la tabla `textos_admin` existe y tiene SELECT para authenticated
-
-## Día 4 — Siguiente sesión
-
-- Testing completo del flujo de reservas
-- Ajustes según feedback
-- Inicio del panel de guarda (verificar QR / check-in)
+Ver resumen al final del día.
