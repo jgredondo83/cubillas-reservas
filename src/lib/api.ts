@@ -121,3 +121,15 @@ export function crearVivienda(params: CrearViviendaParams) {
 export function gestionarVivienda(params: GestionarViviendaParams) {
   return callFunction<{ accion: string }>('gestionar-vivienda-admin', params)
 }
+
+export interface RegistrarPagoParams {
+  reserva_id: string
+  cantidad_euros: number
+  fianza_euros?: number
+  metodo: 'efectivo' | 'bizum' | 'transferencia' | 'otros'
+  referencia?: string
+}
+
+export function registrarPago(params: RegistrarPagoParams) {
+  return callFunction<{ estado: string; datos_pago: Record<string, unknown> }>('registrar-pago', params)
+}

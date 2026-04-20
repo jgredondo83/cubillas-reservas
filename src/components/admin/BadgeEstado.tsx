@@ -8,6 +8,7 @@ const COLORES_USUARIO: Record<string, string> = {
 const COLORES_RESERVA: Record<string, string> = {
   confirmada: 'bg-green-100 text-green-700',
   pendiente_pago: 'bg-amber-100 text-amber-700',
+  pagado: 'bg-fuchsia-100 text-fuchsia-800',
   cancelada: 'bg-gray-100 text-gray-500',
   completada: 'bg-blue-100 text-blue-700',
   no_presentado: 'bg-red-100 text-red-700',
@@ -21,6 +22,7 @@ const TEXTOS: Record<string, string> = {
   bloqueado: 'Bloqueado',
   confirmada: 'Confirmada',
   pendiente_pago: 'Pte. pago',
+  pagado: 'Pagado',
   cancelada: 'Cancelada',
   completada: 'Completada',
   no_presentado: 'No presentado',

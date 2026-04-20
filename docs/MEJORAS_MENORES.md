@@ -27,3 +27,5 @@
 - [ ] MEJORA — Revisar schema de viviendas: campos actuales (bloque, numero, letra) pueden no encajar con realidad de Cubillas (calle, tipo_vivienda). Esperar a tener Excel real antes de migrar.
 - [x] MEJORA — AdminUsuarioDetalle: editar email ahora posible para super_admin (acción cambiar_email en gestionar-usuario-admin).
 - [ ] MEJORA — Configurar Sender email address en Supabase Auth SMTP Settings con dominio propio (ej. noreply@brevosend.com temporal, o subdominio propio de Hostinger cuando se configure). Actualmente usa info@doyou.co.th que puede ir a spam.
+- [ ] MEJORA — Cron auto-cancelación: cancelar automáticamente reservas en estado `pendiente_pago` si superan N días sin pago (configurar `dias_limite_pago` en recurso.config). Implementar como Edge Function cron o pg_cron.
+- [ ] MEJORA — Devolución de fianza: cuando una reserva `pagado` de Club Social se completa o cancela, mostrar recordatorio al admin de devolver la fianza. Datos de fianza en `reserva.datos_pago.fianza_euros`.

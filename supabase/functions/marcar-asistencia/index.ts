@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (resultado === 'presentado') {
-      if (!['confirmada', 'pendiente_pago', 'pendiente_no_presentado'].includes(reserva.estado)) {
+      if (!['confirmada', 'pendiente_pago', 'pagado', 'pendiente_no_presentado'].includes(reserva.estado)) {
         return respuesta(409, 'No se puede marcar como presentado (estado actual: ' + reserva.estado + ')')
       }
 
@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (resultado === 'no_presentado') {
-      if (!['confirmada', 'pendiente_pago', 'pendiente_no_presentado'].includes(reserva.estado)) {
+      if (!['confirmada', 'pendiente_pago', 'pagado', 'pendiente_no_presentado'].includes(reserva.estado)) {
         return respuesta(409, 'No se puede marcar como no presentado (estado actual: ' + reserva.estado + ')')
       }
 

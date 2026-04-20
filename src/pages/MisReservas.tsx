@@ -18,6 +18,7 @@ interface ReservaConRecurso extends Reserva {
 const BADGE_COLORES: Record<string, string> = {
   confirmada: 'bg-green-100 text-green-700',
   pendiente_pago: 'bg-amber-100 text-amber-700',
+  pagado: 'bg-fuchsia-100 text-fuchsia-800',
   cancelada: 'bg-gray-100 text-gray-500',
   completada: 'bg-blue-100 text-blue-700',
   no_presentado: 'bg-red-100 text-red-700',
@@ -26,6 +27,7 @@ const BADGE_COLORES: Record<string, string> = {
 const BADGE_TEXTO: Record<string, string> = {
   confirmada: 'Confirmada',
   pendiente_pago: 'Pendiente de pago',
+  pagado: 'Pagado',
   cancelada: 'Cancelada',
   completada: 'Completada',
   no_presentado: 'No presentado',
@@ -61,7 +63,7 @@ export default function MisReservas() {
   const ahora = new Date()
 
   const proximas = reservas.filter(
-    (r) => ['confirmada', 'pendiente_pago'].includes(r.estado) && new Date(r.inicio) >= ahora
+    (r) => ['confirmada', 'pendiente_pago', 'pagado'].includes(r.estado) && new Date(r.inicio) >= ahora
   )
 
   const pasadas = reservas

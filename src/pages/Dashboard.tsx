@@ -29,7 +29,7 @@ export default function Dashboard() {
         .from('reservas')
         .select('*, recursos(nombre, tipo)', { count: 'exact' })
         .eq('usuario_id', user!.id)
-        .in('estado', ['confirmada', 'pendiente_pago'])
+        .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
         .gte('inicio', ahora)
         .order('inicio', { ascending: true })
         .limit(3)
@@ -100,7 +100,12 @@ export default function Dashboard() {
                     </div>
                     {r.estado === 'pendiente_pago' && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
-                        Pago
+                        Pte. pago
+                      </span>
+                    )}
+                    {r.estado === 'pagado' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-fuchsia-100 text-fuchsia-800 font-medium">
+                        Pagado
                       </span>
                     )}
                   </div>

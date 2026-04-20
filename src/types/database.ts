@@ -14,6 +14,7 @@ export type TipoRecurso = 'padel' | 'tenis' | 'club_social'
 export type EstadoReserva =
   | 'confirmada'
   | 'pendiente_pago'
+  | 'pagado'
   | 'cancelada'
   | 'completada'
   | 'no_presentado'
@@ -112,6 +113,14 @@ export interface Reserva {
   motivo_cancelacion: string | null
   cancelo_tarde: boolean
   notas: string | null
+  datos_pago: {
+    cantidad_euros: number
+    fianza_euros?: number
+    metodo: 'efectivo' | 'bizum' | 'transferencia' | 'otros'
+    referencia?: string
+    registrado_por: string
+    registrado_en: string
+  } | null
   estado_previo: string | null
   marcado_presentado_por: string | null
   marcado_en: string | null

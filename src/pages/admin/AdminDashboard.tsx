@@ -8,6 +8,7 @@ interface Contadores {
   usuariosPendientes: number
   reservasHoy: number
   noPresentadosPendientes: number
+  pagosPendientes: number
   viviendasImpago: number
 }
 
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
     usuariosPendientes: 0,
     reservasHoy: 0,
     noPresentadosPendientes: 0,
+    pagosPendientes: 0,
     viviendasImpago: 0,
   })
   const [cargando, setCargando] = useState(true)
@@ -32,12 +34,13 @@ export default function AdminDashboard() {
     const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).toISOString()
     const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1).toISOString()
 
-    const [rPendientes, rReservasHoy, rNoPresentados, rImpago] = await Promise.all([
+    const [rPendientes, rReservasHoy, rNoPresentados, rPagosPend, rImpago] = await Promise.all([
       supabase.from('usuarios').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
       supabase.from('reservas').select('id', { count: 'exact', head: true })
         .gte('inicio', inicioHoy).lt('inicio', finHoy)
-        .in('estado', ['confirmada', 'pendiente_pago']),
+        .in('estado', ['confirmada', 'pendiente_pago', 'pagado']),
       supabase.from('reservas').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente_no_presentado'),
+      supabase.from('reservas').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente_pago'),
       supabase.from('viviendas').select('id', { count: 'exact', head: true }).eq('bloqueada_por_impago', true),
     ])
 
@@ -45,6 +48,7 @@ export default function AdminDashboard() {
       usuariosPendientes: rPendientes.count ?? 0,
       reservasHoy: rReservasHoy.count ?? 0,
       noPresentadosPendientes: rNoPresentados.count ?? 0,
+      pagosPendientes: rPagosPend.count ?? 0,
       viviendasImpago: rImpago.count ?? 0,
     })
     setCargando(false)
@@ -76,6 +80,14 @@ export default function AdminDashboard() {
       color: 'bg-red-50 border-red-200',
       textoColor: 'text-red-700',
       link: '/admin/reservas?estado=pendiente_no_presentado',
+    },
+    {
+      titulo: 'Pagos pendientes',
+      valor: contadores.pagosPendientes,
+      icono: '💰',
+      color: 'bg-amber-50 border-amber-200',
+      textoColor: 'text-amber-700',
+      link: '/admin/reservas?estado=pendiente_pago',
     },
     {
       titulo: 'Viviendas con impago',

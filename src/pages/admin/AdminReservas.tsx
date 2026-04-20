@@ -6,7 +6,7 @@ import DropdownAcciones from '../../components/admin/DropdownAcciones'
 import ModalConfirmacion from '../../components/admin/ModalConfirmacion'
 import { supabase } from '../../lib/supabase'
 import { useTemaAdmin } from '../../hooks/useTemaAdmin'
-import { cancelarReserva, marcarAsistencia } from '../../lib/api'
+import { cancelarReserva, marcarAsistencia, registrarPago } from '../../lib/api'
 import type { EstadoReserva } from '../../types/database'
 
 interface ReservaAdmin {
@@ -20,6 +20,9 @@ interface ReservaAdmin {
   usuario_nombre: string
   usuario_apellidos: string
   recurso_nombre: string
+  recurso_tipo: string
+  recurso_coste: number
+  recurso_fianza: number
   vivienda_id: string
   vivienda_ref: string
 }
@@ -60,6 +63,13 @@ export default function AdminReservas() {
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
 
+  // Modal pago
+  const [reservaPago, setReservaPago] = useState<ReservaAdmin | null>(null)
+  const [pagoCantidad, setPagoCantidad] = useState('')
+  const [pagoFianza, setPagoFianza] = useState('')
+  const [pagoMetodo, setPagoMetodo] = useState<'efectivo' | 'bizum' | 'transferencia' | 'otros'>('efectivo')
+  const [pagoReferencia, setPagoReferencia] = useState('')
+
   useEffect(() => {
     cargar()
   }, [pagina, filtroEstado, filtroFecha, filtroRecurso, filtroVivienda])
@@ -69,7 +79,7 @@ export default function AdminReservas() {
     let query = supabase
       .from('reservas')
       .select(
-        'id, inicio, fin, estado, notas, motivo_cancelacion, usuario_id, vivienda_id, usuarios!reservas_usuario_id_fkey(nombre, apellidos), recursos(nombre), viviendas(referencia)',
+        'id, inicio, fin, estado, notas, motivo_cancelacion, usuario_id, vivienda_id, usuarios!reservas_usuario_id_fkey(nombre, apellidos), recursos(nombre, tipo, config), viviendas(referencia)',
         { count: 'exact' }
       )
 
@@ -91,7 +101,7 @@ export default function AdminReservas() {
     setReservas(
       (data || []).map((r: Record<string, unknown>) => {
         const usuario = r.usuarios as { nombre: string; apellidos: string } | null
-        const recurso = r.recursos as { nombre: string } | null
+        const recurso = r.recursos as { nombre: string; tipo: string; config: Record<string, unknown> } | null
         const vivienda = r.viviendas as { referencia: string } | null
         return {
           id: r.id as string,
@@ -104,6 +114,9 @@ export default function AdminReservas() {
           usuario_nombre: usuario?.nombre || '—',
           usuario_apellidos: usuario?.apellidos || '',
           recurso_nombre: recurso?.nombre || '—',
+          recurso_tipo: recurso?.tipo || '',
+          recurso_coste: (recurso?.config?.coste_euros as number) ?? 0,
+          recurso_fianza: (recurso?.config?.fianza_euros as number) ?? 0,
           vivienda_id: r.vivienda_id as string,
           vivienda_ref: vivienda?.referencia || '—',
         }
@@ -165,9 +178,14 @@ export default function AdminReservas() {
   }
 
   function accionesReserva(r: ReservaAdmin) {
-    const activa = ['confirmada', 'pendiente_pago'].includes(r.estado)
+    const activa = ['confirmada', 'pendiente_pago', 'pagado'].includes(r.estado)
     const marcada = ['completada', 'no_presentado', 'pendiente_no_presentado'].includes(r.estado)
     return [
+      {
+        label: 'Registrar pago',
+        onClick: () => { setReservaPago(r); setPagoCantidad(r.recurso_coste ? String(r.recurso_coste) : ''); setPagoFianza(r.recurso_fianza ? String(r.recurso_fianza) : ''); setPagoMetodo('efectivo'); setPagoReferencia('') },
+        oculto: r.estado !== 'pendiente_pago',
+      },
       {
         label: 'Cancelar',
         onClick: () => { setReservaAccion(r); setAccionTipo('cancelar') },
@@ -190,6 +208,41 @@ export default function AdminReservas() {
         oculto: !marcada,
       },
     ]
+  }
+
+  async function ejecutarPago() {
+    if (!reservaPago) return
+    const cantidad = parseFloat(pagoCantidad)
+    if (isNaN(cantidad) || cantidad < 0) {
+      setError('Introduce una cantidad válida')
+      return
+    }
+    if (pagoMetodo === 'otros' && !pagoReferencia.trim()) {
+      setError('El campo referencia es obligatorio para el método "Otros"')
+      return
+    }
+    setProcesando(true)
+    setError(null)
+
+    const fianza = pagoFianza ? parseFloat(pagoFianza) : undefined
+    const { error: err } = await registrarPago({
+      reserva_id: reservaPago.id,
+      cantidad_euros: cantidad,
+      fianza_euros: fianza && !isNaN(fianza) ? fianza : undefined,
+      metodo: pagoMetodo,
+      referencia: pagoReferencia.trim() || undefined,
+    })
+
+    if (err) {
+      setError(err)
+    } else {
+      setExito('Pago registrado')
+      cargar()
+      setTimeout(() => setExito(null), 3000)
+    }
+
+    setReservaPago(null)
+    setProcesando(false)
   }
 
   const totalPaginas = Math.ceil(total / PAGE_SIZE)
@@ -232,6 +285,7 @@ export default function AdminReservas() {
               <option value="">Todos los estados</option>
               <option value="confirmada">Confirmada</option>
               <option value="pendiente_pago">Pendiente pago</option>
+              <option value="pagado">Pagado</option>
               <option value="completada">Completada</option>
               <option value="cancelada">Cancelada</option>
               <option value="no_presentado">No presentado</option>
@@ -359,7 +413,7 @@ export default function AdminReservas() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal acciones */}
       {reservaAccion && accionTipo && (
         <ModalConfirmacion
           titulo={modalTitulos[accionTipo]}
@@ -371,6 +425,86 @@ export default function AdminReservas() {
           onConfirmar={ejecutarAccion}
           onCancelar={() => { setReservaAccion(null); setAccionTipo(null) }}
         />
+      )}
+
+      {/* Modal registrar pago */}
+      {reservaPago && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-lg">
+            <h2 className="font-bold text-gray-800 mb-1">Registrar pago</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {reservaPago.recurso_nombre} — {reservaPago.usuario_nombre} {reservaPago.usuario_apellidos} ({formatFecha(reservaPago.inicio)} {formatHora(reservaPago.inicio)})
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Cantidad (€) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={pagoCantidad}
+                  onChange={(e) => setPagoCantidad(e.target.value)}
+                  placeholder="50"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Fianza (€)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={pagoFianza}
+                  onChange={(e) => setPagoFianza(e.target.value)}
+                  placeholder="100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Método de pago *</label>
+                <select
+                  value={pagoMetodo}
+                  onChange={(e) => setPagoMetodo(e.target.value as typeof pagoMetodo)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="bizum">Bizum</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">
+                  Referencia{pagoMetodo === 'otros' ? ' *' : ''}
+                </label>
+                <input
+                  type="text"
+                  value={pagoReferencia}
+                  onChange={(e) => setPagoReferencia(e.target.value)}
+                  placeholder={pagoMetodo === 'otros' ? 'Obligatorio: describe el método' : 'Nº transferencia, concepto…'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setReservaPago(null)}
+                className="flex-1 h-10 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={ejecutarPago}
+                disabled={procesando || !pagoCantidad}
+                className={`flex-1 h-10 rounded-lg text-sm text-white ${tema.btnPrimario} ${tema.btnPrimarioHover} disabled:opacity-50 transition-colors`}
+              >
+                {procesando ? 'Registrando…' : 'Registrar pago'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   )

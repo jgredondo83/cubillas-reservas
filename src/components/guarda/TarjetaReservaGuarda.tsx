@@ -64,11 +64,11 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
 
   const esCancelada = reserva.estado === 'cancelada'
   const esMarcada = ['completada', 'no_presentado', 'pendiente_no_presentado'].includes(reserva.estado)
-  const esActiva = ['confirmada', 'pendiente_pago'].includes(reserva.estado)
+  const esPendientePago = reserva.estado === 'pendiente_pago'
+  const esActiva = ['confirmada', 'pagado'].includes(reserva.estado)
 
-  // Presentado: siempre habilitado si esActiva
-  // No presentado: habilitado si yaEnVentana
-  // Cancelar: siempre habilitado si esActiva
+  // Presentado/No presentado/Cancelar: solo si activa (confirmada o pagado) o pendiente_no_presentado
+  // pendiente_pago: NO puede marcarse hasta que admin registre pago
   const mostrarBotones = esActiva || reserva.estado === 'pendiente_no_presentado'
 
   // Apariencia: atenuada si fuera de ventana visual
@@ -110,6 +110,8 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
   let cardClasses = 'rounded-xl p-4 mb-3 border '
   if (esCancelada) {
     cardClasses += 'bg-slate-800/50 border-slate-700 opacity-40'
+  } else if (esPendientePago) {
+    cardClasses += 'bg-slate-700 border-red-500'
   } else if (reserva.estado === 'completada') {
     cardClasses += 'bg-slate-700 border-teal-500/50'
   } else if (reserva.estado === 'no_presentado') {
@@ -124,7 +126,8 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
 
   const estadoBadge: Record<string, { texto: string; clase: string }> = {
     confirmada: { texto: 'Confirmada', clase: 'bg-teal-600 text-white' },
-    pendiente_pago: { texto: 'Pte. pago', clase: 'bg-amber-600 text-white' },
+    pendiente_pago: { texto: 'Pte. pago', clase: 'bg-red-600 text-white' },
+    pagado: { texto: 'Pagado', clase: 'bg-fuchsia-600 text-white' },
     completada: { texto: 'Presentado', clase: 'bg-teal-500 text-white' },
     no_presentado: { texto: 'No presentado', clase: 'bg-red-500 text-white' },
     pendiente_no_presentado: { texto: 'Pte. revisar', clase: 'bg-amber-500 text-white' },
@@ -164,6 +167,13 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
             {reserva.usuarios.telefono}
           </a>
         </div>
+
+        {/* Alerta pago pendiente */}
+        {esPendientePago && (
+          <div className="bg-red-900/50 border border-red-700 text-red-200 text-sm p-3 rounded-lg mb-2">
+            Reserva pendiente de pago. El vecino debe pasar por administración antes de poder usar la instalación.
+          </div>
+        )}
 
         {/* Info de marcado */}
         {esMarcada && reserva.marcado_en && (

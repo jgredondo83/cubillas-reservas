@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
       return respuesta(404, 'Reserva no encontrada')
     }
 
-    if (!['confirmada', 'pendiente_pago'].includes(reserva.estado)) {
+    if (!['confirmada', 'pendiente_pago', 'pagado'].includes(reserva.estado)) {
       return respuesta(409, 'Esta reserva no se puede cancelar (estado actual: ' + reserva.estado + ')')
     }
 
