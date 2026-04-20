@@ -93,10 +93,9 @@ Deno.serve(async (req: Request) => {
     const esEnNombreDe = perfilObjetivo.id !== user.id
 
     if (vivienda?.bloqueada_por_impago) {
-      const motivo = vivienda.motivo_bloqueo || 'pagos pendientes'
       const mensajePrincipal = esEnNombreDe
-        ? `La vivienda de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} tiene pagos pendientes: ${motivo}.`
-        : `Esta vivienda tiene pagos pendientes: ${motivo}.`
+        ? `La vivienda de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} tiene pagos pendientes con la administración.`
+        : 'Esta vivienda tiene pagos pendientes con la administración.'
       const instrucciones = esEnNombreDe
         ? 'Un administrador puede gestionar el bloqueo desde el panel de admin.'
         : `Contacta con administración para regularizar la situación. ${datosContacto}`
@@ -104,16 +103,33 @@ Deno.serve(async (req: Request) => {
     }
 
     // 4. Usuario bloqueado (se comprueba el objetivo, no el caller)
-    if (perfilObjetivo.bloqueado_hasta && new Date(perfilObjetivo.bloqueado_hasta) > new Date()) {
-      const fechaStr = new Date(perfilObjetivo.bloqueado_hasta).toLocaleDateString('es-ES', {
-        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid',
-      })
-      const mensajePrincipal = esEnNombreDe
-        ? `La cuenta de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} está bloqueada temporalmente hasta el ${fechaStr} por ausencias no justificadas.`
-        : `Tu cuenta está bloqueada temporalmente hasta el ${fechaStr} por ausencias no justificadas en los últimos 30 días.`
-      const instrucciones = esEnNombreDe
+    // Dos casos: bloqueo con fecha (automático por no-presentados) o sin fecha (manual por admin, indefinido)
+    const estaBloqueado = perfilObjetivo.estado === 'bloqueado' &&
+      (perfilObjetivo.bloqueado_hasta === null || new Date(perfilObjetivo.bloqueado_hasta) > new Date())
+
+    if (estaBloqueado) {
+      let mensajePrincipal: string
+      let instrucciones: string
+
+      if (perfilObjetivo.bloqueado_hasta) {
+        // Bloqueo temporal (automático o con fecha)
+        const fechaStr = new Date(perfilObjetivo.bloqueado_hasta).toLocaleDateString('es-ES', {
+          day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid',
+        })
+        mensajePrincipal = esEnNombreDe
+          ? `La cuenta de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} está bloqueada temporalmente hasta el ${fechaStr}.`
+          : `Tu cuenta está bloqueada temporalmente hasta el ${fechaStr}.`
+      } else {
+        // Bloqueo indefinido (manual por admin)
+        mensajePrincipal = esEnNombreDe
+          ? `La cuenta de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} está bloqueada de forma indefinida.`
+          : 'Tu cuenta está bloqueada de forma indefinida.'
+      }
+
+      instrucciones = esEnNombreDe
         ? 'Un administrador puede desbloquear la cuenta desde el panel de admin si procede.'
-        : `Si crees que se trata de un error, ponte en contacto con administración. ${datosContacto}`
+        : `Contacta con administración para más información. ${datosContacto}`
+
       return respuesta(403, mensajePrincipal + '\n\n' + instrucciones)
     }
 

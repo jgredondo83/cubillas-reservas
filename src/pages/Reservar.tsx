@@ -21,9 +21,10 @@ const COMUNIDAD_ID = '00000000-0000-0000-0000-000000000001'
 interface Props {
   usuarioObjetivo?: { id: string; nombre: string; apellidos: string }
   rutaRetorno?: string
+  callerRol?: 'guarda' | 'admin'
 }
 
-export default function Reservar({ usuarioObjetivo, rutaRetorno }: Props = {}) {
+export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Props = {}) {
   const { perfil } = useAuth()
   const navigate = useNavigate()
 
@@ -214,6 +215,7 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno }: Props = {}) {
         {usuarioObjetivo && (
           <div className="bg-amber-900/50 border border-amber-700 text-amber-200 text-sm p-3 rounded-lg mb-4">
             Creando reserva en nombre de <strong>{usuarioObjetivo.nombre} {usuarioObjetivo.apellidos}</strong>
+            {callerRol === 'admin' && ' (como administrador)'}
           </div>
         )}
 

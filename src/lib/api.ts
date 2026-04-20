@@ -67,3 +67,56 @@ export interface MarcarAsistenciaResult {
 export function marcarAsistencia(params: MarcarAsistenciaParams) {
   return callFunction<MarcarAsistenciaResult>('marcar-asistencia', params)
 }
+
+// === Admin ===
+
+export interface CrearUsuarioAdminParams {
+  nombre: string
+  apellidos: string
+  alias?: string
+  telefono: string
+  email?: string
+  vivienda_id: string
+  rol?: string
+  activar?: boolean
+}
+
+export function crearUsuarioAdmin(params: CrearUsuarioAdminParams) {
+  return callFunction<{ usuario: Record<string, unknown> }>('crear-usuario-admin', params)
+}
+
+export interface GestionarUsuarioParams {
+  usuario_id: string
+  accion: 'verificar' | 'bloquear' | 'desbloquear' | 'cambiar_rol' | 'eliminar' | 'cambiar_email'
+  motivo?: string
+  nuevo_rol?: string
+  nuevo_email?: string
+  bloqueado_hasta?: string | null
+}
+
+export function gestionarUsuario(params: GestionarUsuarioParams) {
+  return callFunction<{ accion: string }>('gestionar-usuario-admin', params)
+}
+
+export interface GestionarViviendaParams {
+  vivienda_id: string
+  accion: 'bloquear' | 'desbloquear' | 'eliminar'
+  motivo?: string
+}
+
+export interface CrearViviendaParams {
+  referencia: string
+  bloque?: string
+  numero?: string
+  letra?: string
+  planta?: string
+  nota_admin?: string
+}
+
+export function crearVivienda(params: CrearViviendaParams) {
+  return callFunction<{ vivienda: Record<string, unknown> }>('gestionar-vivienda-admin', { accion: 'crear', ...params })
+}
+
+export function gestionarVivienda(params: GestionarViviendaParams) {
+  return callFunction<{ accion: string }>('gestionar-vivienda-admin', params)
+}

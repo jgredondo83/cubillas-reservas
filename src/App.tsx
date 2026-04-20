@@ -9,10 +9,18 @@ import CompletarRegistro from './pages/CompletarRegistro'
 import Reservar from './pages/Reservar'
 import MisReservas from './pages/MisReservas'
 import Privacidad from './pages/Privacidad'
-import Admin from './pages/Admin'
 import GuardaHoy from './pages/guarda/GuardaHoy'
 import GuardaDia from './pages/guarda/GuardaDia'
 import GuardaNuevaReserva from './pages/guarda/GuardaNuevaReserva'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminUsuarios from './pages/admin/AdminUsuarios'
+import AdminUsuarioDetalle from './pages/admin/AdminUsuarioDetalle'
+import AdminUsuarioNuevo from './pages/admin/AdminUsuarioNuevo'
+import AdminViviendas from './pages/admin/AdminViviendas'
+import AdminViviendaDetalle from './pages/admin/AdminViviendaDetalle'
+import AdminReservas from './pages/admin/AdminReservas'
+import AdminReservaNueva from './pages/admin/AdminReservaNueva'
+import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
 
 export default function App() {
   return (
@@ -70,12 +78,76 @@ export default function App() {
             }
           />
 
-          {/* Admin placeholder */}
+          {/* Rutas del admin */}
           <Route
             path="/admin"
             element={
               <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
-                <Admin />
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminUsuarios />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios/nuevo"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminUsuarioNuevo />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios/:id"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminUsuarioDetalle />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/viviendas"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminViviendas />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/viviendas/nueva"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminViviendaNueva />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/viviendas/:id"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminViviendaDetalle />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reservas"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminReservas />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reservas/nueva"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminReservaNueva />
               </ProtectedRoute>
             }
           />

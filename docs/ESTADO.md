@@ -55,3 +55,33 @@
 ### Acciones pendientes para Jaime
 
 Ver resumen al final del día.
+
+## Día 5 — 19 de abril de 2026 (en curso)
+
+### Completado
+
+**Migración SQL** (pendiente de ejecutar):
+- `009_textos_admin_contacto.sql` — seed datos contacto administración
+- `010_rls_admin.sql` — RLS para panel admin (helpers es_admin_o_super, es_super_admin)
+
+**Edge Functions** (pendientes de desplegar):
+- `crear-usuario-admin` — crear usuarios desde panel admin (con/sin email)
+- `gestionar-usuario-admin` — verificar, bloquear, desbloquear, cambiar rol, eliminar
+- `gestionar-vivienda-admin` — bloquear/desbloquear por impago
+
+**Frontend**:
+- AdminLayout con sidebar (10 secciones, 4 activas), tema indigo/violet según rol
+- Dashboard con 4 tarjetas (usuarios pendientes, reservas hoy, no presentados, viviendas impago)
+- Sección Usuarios: lista con filtros (estado, rol, búsqueda), paginación, detalle con edición inline, acciones (verificar, bloquear, desbloquear, eliminar), formulario crear usuario
+- Sección Viviendas: lista con filtro impago, edición inline, bloquear/desbloquear
+- Sección Reservas: lista con filtros (estado, fecha), paginación, acciones (cancelar, marcar asistencia, deshacer)
+- Componentes admin: BadgeRol, BadgeEstado, ModalConfirmacion, DropdownAcciones
+- Hook useTemaAdmin (indigo para admin, violet para super_admin)
+- App.tsx actualizado con todas las rutas admin
+
+### Acciones pendientes para Jaime
+
+- Ejecutar migraciones 009 y 010
+- Desplegar Edge Functions: crear-usuario-admin, gestionar-usuario-admin, gestionar-vivienda-admin
+- Convertirse a super_admin para testing
+- Push tras revisión

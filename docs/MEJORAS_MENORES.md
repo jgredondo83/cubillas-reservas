@@ -21,3 +21,9 @@
 - [x] `CompletarRegistro.tsx` — Cambiar ayuda del campo "Alias público". Arreglado en día 4.
 
 - [x] Mensajes de error cuando cuenta bloqueada o vivienda morosa ahora incluyen datos de contacto de administración, configurables desde textos_admin.
+
+- [ ] MEJORA — Panel admin: exportar usuarios, viviendas, reservas a CSV.
+- [ ] MEJORA — Panel admin: importar viviendas desde CSV (útil cuando llegue el Excel del presidente).
+- [ ] MEJORA — Revisar schema de viviendas: campos actuales (bloque, numero, letra) pueden no encajar con realidad de Cubillas (calle, tipo_vivienda). Esperar a tener Excel real antes de migrar.
+- [x] MEJORA — AdminUsuarioDetalle: editar email ahora posible para super_admin (acción cambiar_email en gestionar-usuario-admin).
+- [ ] MEJORA — Configurar Sender email address en Supabase Auth SMTP Settings con dominio propio (ej. noreply@brevosend.com temporal, o subdominio propio de Hostinger cuando se configure). Actualmente usa info@doyou.co.th que puede ir a spam.

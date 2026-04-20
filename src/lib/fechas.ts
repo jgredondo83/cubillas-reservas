@@ -17,13 +17,17 @@ const formateadorHora = new Intl.DateTimeFormat('es-ES', {
   hour12: false,
 })
 
-export function formatoFechaCorta(fecha: Date | string): string {
-  const d = typeof fecha === 'string' ? new Date(fecha) : fecha
+export function formatoFechaCorta(fecha: Date | string | null | undefined): string {
+  if (!fecha) return '—'
+  const d = fecha instanceof Date ? fecha : new Date(fecha)
+  if (isNaN(d.getTime())) return '—'
   return formateadorFechaCorta.format(d)
 }
 
-export function formatoFechaLarga(fecha: Date | string): string {
-  const d = typeof fecha === 'string' ? new Date(fecha) : fecha
+export function formatoFechaLarga(fecha: Date | string | null | undefined): string {
+  if (!fecha) return '—'
+  const d = fecha instanceof Date ? fecha : new Date(fecha)
+  if (isNaN(d.getTime())) return '—'
   return formateadorFechaLarga.format(d)
 }
 
@@ -31,8 +35,10 @@ export function formatoHora(hora: string): string {
   return hora.slice(0, 5)
 }
 
-export function formatoHoraDesdeDate(fecha: Date | string): string {
-  const d = typeof fecha === 'string' ? new Date(fecha) : fecha
+export function formatoHoraDesdeDate(fecha: Date | string | null | undefined): string {
+  if (!fecha) return '—'
+  const d = fecha instanceof Date ? fecha : new Date(fecha)
+  if (isNaN(d.getTime())) return '—'
   return formateadorHora.format(d)
 }
 

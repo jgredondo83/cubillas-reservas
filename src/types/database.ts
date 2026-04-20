@@ -61,8 +61,10 @@ export interface Vivienda {
   bloque: string | null
   numero: string | null
   letra: string | null
+  planta: string | null
   bloqueada_por_impago: boolean
   motivo_bloqueo: string | null
+  nota_admin: string | null
 }
 
 export interface Usuario {
