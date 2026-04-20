@@ -54,7 +54,7 @@ export default function AdminUsuarioNuevo() {
       email: email.trim(),
       vivienda_id: viviendaId,
       rol,
-      activar,
+      activar_cuenta: activar,
     })
 
     if (err) {

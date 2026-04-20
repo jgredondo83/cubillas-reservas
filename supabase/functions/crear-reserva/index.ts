@@ -7,6 +7,7 @@ interface CrearReservaBody {
   hora_inicio: string // HH:mm
   duracion_minutos: number
   usuario_id?: string // Solo para guarda/admin: crear reserva en nombre de otro
+  forzar?: boolean // Solo admin/super_admin: salta límite de reservas activas por vivienda
 }
 
 Deno.serve(async (req: Request) => {
@@ -51,7 +52,7 @@ Deno.serve(async (req: Request) => {
 
     // Parsear body
     const body: CrearReservaBody = await req.json()
-    const { recurso_id, fecha, hora_inicio, duracion_minutos, usuario_id: targetUserId } = body
+    const { recurso_id, fecha, hora_inicio, duracion_minutos, usuario_id: targetUserId, forzar } = body
 
     if (!recurso_id || !fecha || !hora_inicio || !duracion_minutos) {
       return respuesta(400, 'Faltan campos obligatorios: recurso_id, fecha, hora_inicio, duracion_minutos')
@@ -250,7 +251,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // 14. Máximo reservas activas por vivienda
-    const maxActivas = (config.max_reservas_activas_por_vivienda as number) || 99
+    // FORZAR: admin/super_admin con body.forzar=true puede saltar SOLO este check.
+    // NO se salta: horario, solapamiento, bloqueos usuario/vivienda/franja, antelación.
+    const maxActivas = (config.max_reservas_activas_por_vivienda as number) ?? 1
     const hoyISO = new Date().toISOString()
 
     const { count: activasCount } = await supabase
@@ -258,11 +261,30 @@ Deno.serve(async (req: Request) => {
       .select('id', { count: 'exact', head: true })
       .eq('recurso_id', recurso_id)
       .eq('vivienda_id', perfilObjetivo.vivienda_id)
-      .in('estado', ['confirmada', 'pendiente_pago'])
+      .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
       .gte('fin', hoyISO)
 
     if ((activasCount ?? 0) >= maxActivas) {
-      return respuesta(409, `Tu vivienda ya tiene ${maxActivas} reserva(s) activa(s) de este recurso. Cancela alguna antes de hacer otra.`)
+      const esAdmin = ['admin', 'super_admin'].includes(perfil.rol)
+
+      if (esAdmin && forzar) {
+        // Admin forzó: saltar SOLO el límite de reservas activas por vivienda
+      } else {
+        const mensaje = esEnNombreDe
+          ? `La vivienda de ${perfilObjetivo.nombre} ${perfilObjetivo.apellidos} ya tiene ${maxActivas} reserva(s) activa(s) de este recurso.`
+          : `Tu vivienda ya tiene ${maxActivas} reserva(s) activa(s) de este recurso. Cancela alguna antes de hacer otra.`
+
+        return new Response(JSON.stringify({
+          error: mensaje,
+          codigo: 'LIMITE_RESERVAS_ACTIVAS',
+          puedeForzar: esAdmin,
+          reservas_activas: activasCount ?? 0,
+          max_reservas: maxActivas,
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     // 15. Estado inicial

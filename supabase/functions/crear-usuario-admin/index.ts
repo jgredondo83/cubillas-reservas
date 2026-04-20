@@ -6,10 +6,11 @@ interface CrearUsuarioBody {
   apellidos: string
   alias?: string
   telefono: string
-  email?: string
+  email: string
   vivienda_id: string
   rol?: string
-  activar?: boolean
+  activar_cuenta?: boolean
+  nivel_padel?: string
 }
 
 Deno.serve(async (req: Request) => {
@@ -37,7 +38,7 @@ Deno.serve(async (req: Request) => {
       return respuesta(401, 'Token no válido')
     }
 
-    // 2. Obtener perfil del caller (rol + comunidad_id)
+    // 2. Verificar caller es admin/super_admin
     const { data: perfil } = await supabase
       .from('usuarios')
       .select('rol, comunidad_id')
@@ -50,9 +51,9 @@ Deno.serve(async (req: Request) => {
 
     const callerComunidadId = perfil.comunidad_id
 
-    // 3. Parsear body
+    // 3. Parsear body — email es obligatorio
     const body: CrearUsuarioBody = await req.json()
-    const { nombre, apellidos, alias, telefono, email, vivienda_id, rol = 'vecino', activar = true } = body
+    const { nombre, apellidos, alias, telefono, email, vivienda_id, rol = 'vecino', activar_cuenta = true, nivel_padel } = body
 
     if (!nombre?.trim() || !apellidos?.trim() || !telefono?.trim() || !email?.trim() || !vivienda_id) {
       return respuesta(400, 'Faltan campos obligatorios: nombre, apellidos, telefono, email, vivienda_id')
@@ -63,7 +64,7 @@ Deno.serve(async (req: Request) => {
       return respuesta(403, 'Solo un super_admin puede asignar rol admin o superior')
     }
 
-    // 4. Verificar vivienda existe Y pertenece a la comunidad del caller
+    // 4. Verificar vivienda existe y pertenece a la comunidad del caller
     const { data: vivienda } = await supabase
       .from('viviendas')
       .select('id')
@@ -75,38 +76,36 @@ Deno.serve(async (req: Request) => {
       return respuesta(404, 'Vivienda no encontrada')
     }
 
-    // 5. Verificar que el email no está en uso
-    const { data: existingUsers } = await supabase.auth.admin.listUsers()
-    const emailEnUso = existingUsers?.users?.some(
+    // 5. Verificar que el email no existe ya en auth.users
+    const { data: listData } = await supabase.auth.admin.listUsers()
+    const emailExiste = listData?.users?.find(
       (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
     )
-    if (emailEnUso) {
+    if (emailExiste) {
       return respuesta(409, 'Ya existe un usuario con ese email')
     }
 
-    // 6. Crear usuario con inviteUserByEmail (crea auth.users + envía email de invitación)
-    const appUrl = Deno.env.get('APP_URL') || 'https://cubillas-reservas.vercel.app'
-    const { data: authData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
+    // 6. inviteUserByEmail — crea auth.users Y envía email de invitación en una llamada
+    const appUrl = Deno.env.get('APP_URL') ?? 'https://cubillas-reservas.vercel.app'
+    const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
       email.trim(),
       {
         redirectTo: `${appUrl}/auth/callback`,
-        data: { invited_by: 'admin_panel' },
+        data: { invited_by: 'admin_panel', admin_id: user.id },
       }
     )
 
     if (inviteError) {
       console.error('Error invitando usuario:', inviteError)
-      if (inviteError.message.includes('already')) {
-        return respuesta(409, 'Ya existe un usuario con ese email')
-      }
-      return respuesta(500, 'Error al crear usuario: ' + inviteError.message)
+      return respuesta(500, 'Error enviando invitación: ' + inviteError.message)
     }
 
-    const authUserId = authData.user.id
-    console.log('Usuario invitado OK, email enviado a:', email.trim())
+    // 7. Usar el ID que auth.users generó — NO generar UUID propio
+    const authUserId = inviteData.user.id
+    console.log('Usuario invitado OK, auth.users.id:', authUserId, 'email:', email.trim())
 
-    // 7. Insertar perfil con comunidad_id del caller
-    const estado = activar ? 'activo' : 'pendiente'
+    // 8. Insertar perfil en public.usuarios con el MISMO ID de auth.users
+    const estado = activar_cuenta ? 'activo' : 'pendiente'
 
     const { data: nuevoUsuario, error: insertError } = await supabase
       .from('usuarios')
@@ -120,24 +119,26 @@ Deno.serve(async (req: Request) => {
         telefono: telefono.trim(),
         rol,
         estado,
+        ...(nivel_padel ? { nivel_padel } : {}),
       })
       .select()
       .single()
 
     if (insertError) {
-      console.error('Error insertando usuario:', insertError)
+      console.error('Error insertando perfil:', insertError)
+      // Limpiar auth.users si falla el perfil
       await supabase.auth.admin.deleteUser(authUserId)
       return respuesta(500, 'Error al crear el perfil: ' + insertError.message)
     }
 
-    // 8. Log
+    // 9. Log
     await supabase.from('logs_admin').insert({
       comunidad_id: callerComunidadId,
       admin_id: user.id,
       accion: 'crear_usuario',
       target_tipo: 'usuario',
       target_id: authUserId,
-      detalle: { nombre: nombre.trim(), apellidos: apellidos.trim(), rol, estado, vivienda_id },
+      detalle: { nombre: nombre.trim(), apellidos: apellidos.trim(), email: email.trim(), rol, estado, vivienda_id },
     })
 
     return respuesta(200, null, { usuario: nuevoUsuario })

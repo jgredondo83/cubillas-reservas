@@ -39,6 +39,8 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
   const [error, setError] = useState<string | null>(null)
   const [textoExito, setTextoExito] = useState<string | null>(null)
   const [cargandoFranjas, setCargandoFranjas] = useState(false)
+  const [mostrarModalForzar, setMostrarModalForzar] = useState(false)
+  const [infoLimite, setInfoLimite] = useState<{ mensaje: string; activas: number; max: number } | null>(null)
 
   // Cargar recursos
   useEffect(() => {
@@ -158,21 +160,34 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
     setPaso('confirmar')
   }
 
-  async function confirmar() {
+  async function confirmar(forzar?: boolean) {
     if (!recursoSeleccionado || !fechaSeleccionada || !franjaSeleccionada) return
 
     setCargando(true)
     setError(null)
+    setMostrarModalForzar(false)
 
-    const { data, error: err } = await crearReserva({
+    const { data, error: err, errorData } = await crearReserva({
       recurso_id: recursoSeleccionado.id,
       fecha: fechaISO(fechaSeleccionada),
       hora_inicio: franjaSeleccionada.horaInicio,
       duracion_minutos: duracion,
       ...(usuarioObjetivo ? { usuario_id: usuarioObjetivo.id } : {}),
+      ...(forzar ? { forzar: true } : {}),
     })
 
     if (err) {
+      // Si es límite de reservas y el admin puede forzar, mostrar modal
+      if (errorData?.codigo === 'LIMITE_RESERVAS_ACTIVAS' && errorData?.puedeForzar) {
+        setInfoLimite({
+          mensaje: err,
+          activas: errorData.reservas_activas as number,
+          max: errorData.max_reservas as number,
+        })
+        setMostrarModalForzar(true)
+        setCargando(false)
+        return
+      }
       setError(err)
       setCargando(false)
       return
@@ -391,7 +406,7 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
             )}
 
             <button
-              onClick={confirmar}
+              onClick={() => confirmar()}
               disabled={cargando}
               className="mt-4 w-full h-12 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -453,6 +468,40 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
           </div>
         )}
       </div>
+
+      {/* Modal forzar reserva (admin) */}
+      {mostrarModalForzar && infoLimite && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-lg">
+            <h2 className="font-bold text-gray-800 mb-3">Límite de reservas alcanzado</h2>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-amber-800">
+                {infoLimite.mensaje}
+              </p>
+              <p className="text-sm text-amber-700 mt-2">
+                Como administrador, puedes forzar la creación de esta reserva saltando el límite de {infoLimite.max} reserva{infoLimite.max !== 1 ? 's' : ''} activa{infoLimite.max !== 1 ? 's' : ''}.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setMostrarModalForzar(false); setInfoLimite(null) }}
+                className="flex-1 h-10 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => confirmar(true)}
+                disabled={cargando}
+                className="flex-1 h-10 rounded-lg text-sm text-white bg-amber-600 hover:bg-amber-500 disabled:opacity-50 transition-colors"
+              >
+                {cargando ? 'Reservando…' : 'Forzar reserva'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

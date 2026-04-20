@@ -36,7 +36,22 @@ export default function AdminReservas() {
     (searchParams.get('estado') as EstadoReserva) || ''
   )
   const [filtroFecha, setFiltroFecha] = useState(searchParams.get('fecha') || searchParams.get('dia') || '')
+  const [filtroRecurso, setFiltroRecurso] = useState(searchParams.get('recurso') || '')
+  const [filtroVivienda, setFiltroVivienda] = useState(searchParams.get('vivienda') || '')
   const [pagina, setPagina] = useState(0)
+
+  // Opciones para dropdowns
+  const [recursos, setRecursos] = useState<{ id: string; nombre: string }[]>([])
+  const [viviendasOpts, setViviendasOpts] = useState<{ id: string; referencia: string }[]>([])
+
+  useEffect(() => {
+    supabase.from('recursos').select('id, nombre').order('nombre').then(({ data }) => {
+      if (data) setRecursos(data)
+    })
+    supabase.from('viviendas').select('id, referencia').order('referencia').then(({ data }) => {
+      if (data) setViviendasOpts(data)
+    })
+  }, [])
 
   // Modal
   const [reservaAccion, setReservaAccion] = useState<ReservaAdmin | null>(null)
@@ -47,7 +62,7 @@ export default function AdminReservas() {
 
   useEffect(() => {
     cargar()
-  }, [pagina, filtroEstado, filtroFecha])
+  }, [pagina, filtroEstado, filtroFecha, filtroRecurso, filtroVivienda])
 
   async function cargar() {
     setCargando(true)
@@ -64,6 +79,8 @@ export default function AdminReservas() {
       const fin = `${filtroFecha}T23:59:59`
       query = query.gte('inicio', inicio).lte('inicio', fin)
     }
+    if (filtroRecurso) query = query.eq('recurso_id', filtroRecurso)
+    if (filtroVivienda) query = query.eq('vivienda_id', filtroVivienda)
 
     query = query
       .order('inicio', { ascending: false })
@@ -101,6 +118,8 @@ export default function AdminReservas() {
     const params: Record<string, string> = {}
     if (filtroEstado) params.estado = filtroEstado
     if (filtroFecha) params.fecha = filtroFecha
+    if (filtroRecurso) params.recurso = filtroRecurso
+    if (filtroVivienda) params.vivienda = filtroVivienda
     setSearchParams(params)
   }
 
@@ -218,15 +237,35 @@ export default function AdminReservas() {
               <option value="no_presentado">No presentado</option>
               <option value="pendiente_no_presentado">Pte. revisar</option>
             </select>
+            <select
+              value={filtroRecurso}
+              onChange={(e) => setFiltroRecurso(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">Todos los recursos</option>
+              {recursos.map((r) => (
+                <option key={r.id} value={r.id}>{r.nombre}</option>
+              ))}
+            </select>
+            <select
+              value={filtroVivienda}
+              onChange={(e) => setFiltroVivienda(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">Todas las viviendas</option>
+              {viviendasOpts.map((v) => (
+                <option key={v.id} value={v.id}>{v.referencia}</option>
+              ))}
+            </select>
             <button
               onClick={aplicarFiltros}
               className={`px-4 py-2 rounded-lg text-sm text-white ${tema.btnPrimario} ${tema.btnPrimarioHover} transition-colors`}
             >
               Filtrar
             </button>
-            {(filtroEstado || filtroFecha) && (
+            {(filtroEstado || filtroFecha || filtroRecurso || filtroVivienda) && (
               <button
-                onClick={() => { setFiltroEstado(''); setFiltroFecha(''); setPagina(0); setSearchParams({}) }}
+                onClick={() => { setFiltroEstado(''); setFiltroFecha(''); setFiltroRecurso(''); setFiltroVivienda(''); setPagina(0); setSearchParams({}) }}
                 className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
               >
                 Limpiar

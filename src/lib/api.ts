@@ -2,7 +2,7 @@ import { supabase } from './supabase'
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL + '/functions/v1'
 
-async function callFunction<T>(nombre: string, body: unknown): Promise<{ data?: T; error?: string }> {
+async function callFunction<T>(nombre: string, body: unknown): Promise<{ data?: T; error?: string; errorData?: Record<string, unknown> }> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return { error: 'No hay sesión activa' }
 
@@ -19,7 +19,7 @@ async function callFunction<T>(nombre: string, body: unknown): Promise<{ data?: 
   const json = await res.json()
 
   if (!res.ok) {
-    return { error: json.error || 'Error desconocido' }
+    return { error: json.error || 'Error desconocido', errorData: json }
   }
 
   return { data: json as T }
@@ -31,6 +31,7 @@ export interface CrearReservaParams {
   hora_inicio: string
   duracion_minutos: number
   usuario_id?: string
+  forzar?: boolean
 }
 
 export interface CrearReservaResult {
@@ -78,7 +79,7 @@ export interface CrearUsuarioAdminParams {
   email?: string
   vivienda_id: string
   rol?: string
-  activar?: boolean
+  activar_cuenta?: boolean
 }
 
 export function crearUsuarioAdmin(params: CrearUsuarioAdminParams) {
