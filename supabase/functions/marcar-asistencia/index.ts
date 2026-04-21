@@ -161,10 +161,10 @@ Deno.serve(async (req: Request) => {
         return respuesta(500, 'Error al marcar como no presentado')
       }
 
-      // Incrementar contador del usuario dueño
+      // Leer estado y contador FRESH desde BD antes de decidir
       const { data: dueno } = await supabase
         .from('usuarios')
-        .select('no_presentado_count_30d')
+        .select('no_presentado_count_30d, estado')
         .eq('id', reserva.usuario_id)
         .single()
 
@@ -178,7 +178,10 @@ Deno.serve(async (req: Request) => {
       if (nuevoContador >= UMBRAL_NO_PRESENTADOS) {
         const bloqueadoHasta = new Date()
         bloqueadoHasta.setDate(bloqueadoHasta.getDate() + PENALIZACION_DIAS)
+        updateUsuario.estado_previo_bloqueo = dueno?.estado ?? 'activo'
+        updateUsuario.estado = 'bloqueado'
         updateUsuario.bloqueado_hasta = bloqueadoHasta.toISOString()
+        updateUsuario.motivo_bloqueo = `${nuevoContador} ausencias no justificadas en los últimos 30 días`
       }
 
       await supabase

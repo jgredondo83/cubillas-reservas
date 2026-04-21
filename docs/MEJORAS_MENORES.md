@@ -30,3 +30,8 @@
 - [ ] MEJORA — Configurar Sender email address en Supabase Auth SMTP Settings con dominio propio (ej. noreply@brevosend.com temporal, o subdominio propio de Hostinger cuando se configure). Actualmente usa info@doyou.co.th que puede ir a spam.
 - [ ] MEJORA — Cron auto-cancelación: cancelar automáticamente reservas en estado `pendiente_pago` si superan N días sin pago (configurar `dias_limite_pago` en recurso.config). Implementar como Edge Function cron o pg_cron.
 - [ ] MEJORA — Devolución de fianza: cuando una reserva `pagado` de Club Social se completa o cancela, mostrar recordatorio al admin de devolver la fianza. Datos de fianza en `reserva.datos_pago.fianza_euros`.
+
+- [ ] Columna estado_previo en public.usuarios. Actualmente al desbloquear, el sistema busca en logs_admin el estado anterior. Más limpio sería tener una columna dedicada que se actualiza en cada transición. Aplicar en:
+  * marcar-asistencia (bloqueo automático por no-presentados).
+  * gestionar-usuario-admin (bloqueo manual).
+  * En ambos, al desbloquear, restaurar desde estado_previo.

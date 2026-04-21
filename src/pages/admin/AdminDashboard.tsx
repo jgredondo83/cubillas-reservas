@@ -79,7 +79,7 @@ export default function AdminDashboard() {
       icono: '⚠️',
       color: 'bg-red-50 border-red-200',
       textoColor: 'text-red-700',
-      link: '/admin/reservas?estado=pendiente_no_presentado',
+      link: '/admin/no-presentados',
     },
     {
       titulo: 'Pagos pendientes',

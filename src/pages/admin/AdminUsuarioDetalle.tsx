@@ -649,32 +649,42 @@ export default function AdminUsuarioDetalle() {
           {reservas.length === 0 ? (
             <p className="text-sm text-gray-400">Sin reservas</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-2 font-medium text-gray-600">Fecha</th>
-                    <th className="text-left py-2 font-medium text-gray-600">Horario</th>
-                    <th className="text-left py-2 font-medium text-gray-600 hidden sm:table-cell">Recurso</th>
-                    <th className="text-left py-2 font-medium text-gray-600">Estado</th>
-                    <th className="py-2 w-8"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {reservas.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="py-2 text-gray-800">{formatFecha(r.inicio)}</td>
-                      <td className="py-2 text-gray-600">{formatHora(r.inicio)}-{formatHora(r.fin)}</td>
-                      <td className="py-2 text-gray-600 hidden sm:table-cell">{r.recurso_nombre}</td>
-                      <td className="py-2"><BadgeEstado estado={r.estado} tipo="reserva" /></td>
-                      <td className="py-2 pl-1">
-                        <DropdownAcciones acciones={accionesReservaDetalle(r)} />
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-gray-200">
+                    <tr>
+                      <th className="text-left py-2 font-medium text-gray-600">Fecha</th>
+                      <th className="text-left py-2 font-medium text-gray-600">Horario</th>
+                      <th className="text-left py-2 font-medium text-gray-600 hidden sm:table-cell">Recurso</th>
+                      <th className="text-left py-2 font-medium text-gray-600">Estado</th>
+                      <th className="py-2 w-8"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {reservas.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="py-2 text-gray-800">{formatFecha(r.inicio)}</td>
+                        <td className="py-2 text-gray-600">{formatHora(r.inicio)}-{formatHora(r.fin)}</td>
+                        <td className="py-2 text-gray-600 hidden sm:table-cell">{r.recurso_nombre}</td>
+                        <td className="py-2"><BadgeEstado estado={r.estado} tipo="reserva" /></td>
+                        <td className="py-2 pl-1">
+                          <DropdownAcciones acciones={accionesReservaDetalle(r)} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-100 text-right">
+                <Link
+                  to={`/admin/reservas?usuario=${id}`}
+                  className={`text-sm ${tema.acento} hover:underline`}
+                >
+                  Ver todas las reservas de este usuario →
+                </Link>
+              </div>
+            </>
           )}
         </div>
 

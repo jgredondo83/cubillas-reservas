@@ -6,6 +6,7 @@ interface Props {
   textoConfirmar?: string
   textoCancelar?: string
   requiereMotivo?: boolean
+  notaOpcional?: boolean
   destructivo?: boolean
   cargando?: boolean
   onConfirmar: (motivo?: string) => void
@@ -18,6 +19,7 @@ export default function ModalConfirmacion({
   textoConfirmar = 'Confirmar',
   textoCancelar = 'Cancelar',
   requiereMotivo = false,
+  notaOpcional = false,
   destructivo = false,
   cargando = false,
   onConfirmar,
@@ -44,11 +46,11 @@ export default function ModalConfirmacion({
         <h2 className="font-bold text-gray-800 mb-2">{titulo}</h2>
         <p className="text-sm text-gray-500 mb-4">{mensaje}</p>
 
-        {requiereMotivo && (
+        {(requiereMotivo || notaOpcional) && (
           <textarea
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
-            placeholder="Motivo (obligatorio)"
+            placeholder={requiereMotivo ? 'Motivo (obligatorio)' : 'Nota opcional…'}
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none mb-3"
           />

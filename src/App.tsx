@@ -22,6 +22,7 @@ import AdminReservas from './pages/admin/AdminReservas'
 import AdminReservaNueva from './pages/admin/AdminReservaNueva'
 import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
 import AdminTestEmails from './pages/admin/AdminTestEmails'
+import AdminNoPresentados from './pages/admin/AdminNoPresentados'
 import Perfil from './pages/Perfil'
 
 export default function App() {
@@ -162,6 +163,14 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/admin/no-presentados"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminNoPresentados />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/test-emails"
             element={

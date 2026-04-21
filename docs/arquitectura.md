@@ -90,6 +90,38 @@ curl -X POST https://onudupsnjvppuhlyrrmq.supabase.co/functions/v1/cron-recordat
 
 Los crons usan el header `x-cron-key` con el valor del secret `CRON_SECRET_KEY` definido en Supabase Edge Functions → Secrets. Las migraciones de activación (`018_activar_cron_no_presentados.sql`, `020_activar_cron_recordatorio.sql`) tienen el placeholder `CRON_SECRET_KEY_AQUI` que **debe sustituirse** por el valor real antes de ejecutarlas.
 
+## Joins con tabla usuarios desde reservas
+
+La tabla `reservas` tiene **4 foreign keys** hacia `public.usuarios`:
+
+| Columna | Significado |
+|---------|-------------|
+| `usuario_id` | Dueño de la reserva |
+| `creado_por` | Quien la creó (vecino, guarda o admin) |
+| `cancelado_por` | Quien la canceló |
+| `marcado_presentado_por` | Guarda/admin que marcó asistencia |
+
+PostgREST no puede resolver el join sin alias explícito y devuelve **300 PGRST201**. **Siempre** usar el nombre de FK:
+
+```typescript
+// ✅ Correcto
+.select('*, usuarios!reservas_usuario_id_fkey(nombre, apellidos)')
+
+// ❌ Incorrecto — falla con 300 PGRST201
+.select('*, usuarios(nombre, apellidos)')
+```
+
+Si necesitas datos de varias FKs simultáneamente, usa aliases distintos:
+
+```typescript
+.select(`
+  *,
+  dueno:usuarios!reservas_usuario_id_fkey(nombre, apellidos),
+  creador:usuarios!reservas_creado_por_fkey(nombre, apellidos),
+  cancelador:usuarios!reservas_cancelado_por_fkey(nombre, apellidos)
+`)
+```
+
 ## Solapamiento entre espacios
 
 Los recursos comparten espacio físico vía `espacio_id` en la tabla `recursos` (migración 004). El exclusion constraint `reservas_no_solapamiento_espacio` opera sobre `espacio_id + tstzrange(inicio, fin)`, impidiendo reservas solapadas en el mismo espacio aunque sean de recursos distintos (ej. Club Social 6h y 12h).

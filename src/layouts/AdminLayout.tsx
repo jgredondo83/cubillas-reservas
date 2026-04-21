@@ -21,7 +21,7 @@ const SECCIONES: NavItem[] = [
   { label: 'Usuarios', path: '/admin/usuarios', icon: '👥', activo: true },
   { label: 'Viviendas', path: '/admin/viviendas', icon: '🏠', activo: true },
   { label: 'Reservas', path: '/admin/reservas', icon: '📅', activo: true },
-  { label: 'No presentados', path: '/admin/no-presentados', icon: '⚠️', activo: false },
+  { label: 'No presentados', path: '/admin/no-presentados', icon: '⚠️', activo: true },
   { label: 'Bloqueos', path: '/admin/bloqueos', icon: '🚫', activo: false },
   { label: 'Avisos', path: '/admin/avisos', icon: '📢', activo: false },
   { label: 'Recursos', path: '/admin/recursos', icon: '🏸', activo: false },
