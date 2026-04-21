@@ -31,6 +31,65 @@ Ambos (`src/lib/fechas.ts` y `supabase/functions/crear-reserva/index.ts`) implem
 
 Las reservas usan `inicio timestamptz` y `fin timestamptz` (migración 004). Los timestamps se interpretan siempre en zona `Europe/Madrid`. La Edge Function construye los ISO timestamps aplicando el offset de Madrid para la fecha concreta (CET +01 en invierno, CEST +02 en verano).
 
+## Crons automáticos
+
+Los crons se programan con **pg_cron** + **pg_net** dentro de PostgreSQL. Cada cron llama a una Supabase Edge Function vía `net.http_post`.
+
+### Lista de crons
+
+| Nombre | Schedule | Edge Function | Descripción |
+|--------|----------|---------------|-------------|
+| `cron-marcar-no-presentados` | `5 0 * * *` (00:05 UTC) | `cron-marcar-no-presentados` | Marca como `pendiente_no_presentado` las reservas pasadas sin asistencia registrada |
+| `cron-recordatorio-reserva` | `0 * * * *` (cada hora en punto) | `cron-recordatorio-reserva` | Envía email recordatorio ~1h antes de cada reserva (campo `recordatorio_enviado` evita duplicados) |
+
+### Comprobar que están corriendo
+
+```sql
+-- Ver crons registrados
+SELECT * FROM cron.job;
+
+-- Ver historial de ejecuciones recientes
+SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
+```
+
+### Pausar un cron
+
+```sql
+SELECT cron.unschedule('cron-marcar-no-presentados');
+-- o
+SELECT cron.unschedule('cron-recordatorio-reserva');
+```
+
+### Cambiar la hora de ejecución
+
+Re-ejecutar `cron.schedule` con el mismo `jobname` lo reemplaza automáticamente:
+
+```sql
+SELECT cron.schedule(
+  'cron-marcar-no-presentados',
+  '30 1 * * *',  -- nueva hora
+  $$ ... $$
+);
+```
+
+### Forzar ejecución manual (testing)
+
+```bash
+curl -X POST https://onudupsnjvppuhlyrrmq.supabase.co/functions/v1/cron-marcar-no-presentados \
+  -H "x-cron-key: <CRON_SECRET_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+curl -X POST https://onudupsnjvppuhlyrrmq.supabase.co/functions/v1/cron-recordatorio-reserva \
+  -H "x-cron-key: <CRON_SECRET_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### Secreto de autenticación
+
+Los crons usan el header `x-cron-key` con el valor del secret `CRON_SECRET_KEY` definido en Supabase Edge Functions → Secrets. Las migraciones de activación (`018_activar_cron_no_presentados.sql`, `020_activar_cron_recordatorio.sql`) tienen el placeholder `CRON_SECRET_KEY_AQUI` que **debe sustituirse** por el valor real antes de ejecutarlas.
+
 ## Solapamiento entre espacios
 
 Los recursos comparten espacio físico vía `espacio_id` en la tabla `recursos` (migración 004). El exclusion constraint `reservas_no_solapamiento_espacio` opera sobre `espacio_id + tstzrange(inicio, fin)`, impidiendo reservas solapadas en el mismo espacio aunque sean de recursos distintos (ej. Club Social 6h y 12h).
