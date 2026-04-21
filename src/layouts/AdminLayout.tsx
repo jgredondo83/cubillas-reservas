@@ -13,6 +13,7 @@ interface NavItem {
   path: string
   icon: string
   activo: boolean
+  soloSuper?: boolean
 }
 
 const SECCIONES: NavItem[] = [
@@ -26,6 +27,7 @@ const SECCIONES: NavItem[] = [
   { label: 'Recursos', path: '/admin/recursos', icon: '🏸', activo: false },
   { label: 'Textos', path: '/admin/textos', icon: '📝', activo: false },
   { label: 'Logs', path: '/admin/logs', icon: '📋', activo: false },
+  { label: 'Test emails', path: '/admin/test-emails', icon: '📧', activo: true, soloSuper: true },
 ]
 
 export default function AdminLayout({ children, titulo }: Props) {
@@ -44,8 +46,8 @@ export default function AdminLayout({ children, titulo }: Props) {
   const sidebar = (
     <nav className="py-4 space-y-1 px-3">
       {SECCIONES.map((s) => {
-        // Logs solo visible para super_admin
-        if (s.label === 'Logs' && !esSuper) return null
+        // Items solo visibles para super_admin
+        if (s.soloSuper && !esSuper) return null
 
         const activo = esActivo(s.path)
         if (!s.activo) {

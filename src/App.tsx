@@ -21,6 +21,7 @@ import AdminViviendaDetalle from './pages/admin/AdminViviendaDetalle'
 import AdminReservas from './pages/admin/AdminReservas'
 import AdminReservaNueva from './pages/admin/AdminReservaNueva'
 import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
+import AdminTestEmails from './pages/admin/AdminTestEmails'
 
 export default function App() {
   return (
@@ -148,6 +149,15 @@ export default function App() {
             element={
               <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
                 <AdminReservaNueva />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/test-emails"
+            element={
+              <ProtectedRoute rolesPermitidos={['super_admin']}>
+                <AdminTestEmails />
               </ProtectedRoute>
             }
           />

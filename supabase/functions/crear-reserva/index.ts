@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { enviarEmailBrevo, plantillaReservaConfirmada } from '../_shared/emails.ts'
 
 interface CrearReservaBody {
   recurso_id: string
@@ -314,7 +315,45 @@ Deno.serve(async (req: Request) => {
       return respuesta(500, 'Error al crear la reserva. Inténtalo de nuevo.')
     }
 
-    // 17 + 18. Texto post-reserva
+    // 17. Email de confirmación (best effort — no falla la reserva si falla el email)
+    try {
+      const { data: authUserData } = await supabase.auth.admin.getUserById(perfilObjetivo.id)
+      const emailDestino = authUserData.user?.email
+      if (emailDestino) {
+        const cruzaMedianoche = finTotalMin >= 24 * 60
+        const fechaLarga = new Date(fecha + 'T12:00:00Z').toLocaleDateString('es-ES', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          timeZone: 'Europe/Madrid',
+        })
+        const appUrl = Deno.env.get('APP_URL') ?? 'https://cubillas-reservas.vercel.app'
+        const html = plantillaReservaConfirmada({
+          nombreVecino: `${perfilObjetivo.nombre} ${perfilObjetivo.apellidos}`,
+          nombreRecurso: recurso.nombre,
+          fechaLarga,
+          horaInicio: hora_inicio,
+          horaFin: finHHmm,
+          cruzaMedianoche,
+          estado: estadoInicial,
+          urlMisReservas: `${appUrl}/mis-reservas`,
+          costeEuros: config.coste_euros as number | undefined,
+          fianzaEuros: config.fianza_euros as number | undefined,
+          datosContacto,
+        })
+        const subject = estadoInicial === 'pendiente_pago'
+          ? `Reserva pendiente de pago — ${recurso.nombre}`
+          : `Reserva confirmada — ${recurso.nombre}`
+        const emailResult = await enviarEmailBrevo({
+          to: { email: emailDestino, name: `${perfilObjetivo.nombre} ${perfilObjetivo.apellidos}` },
+          subject,
+          htmlContent: html,
+        })
+        console.log('Email confirmación reserva:', emailResult)
+      }
+    } catch (emailErr) {
+      console.error('Error enviando email confirmación:', emailErr)
+    }
+
+    // 18. Texto post-reserva
     let textoPostReserva: string | null = null
     const clave = config.texto_post_reserva_clave as string | undefined
     if (clave) {

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { enviarEmailBrevo, plantillaReservaCancelada } from '../_shared/emails.ts'
 
 interface CancelarReservaBody {
   reserva_id: string
@@ -90,7 +91,70 @@ Deno.serve(async (req: Request) => {
       return respuesta(500, 'Error al cancelar la reserva')
     }
 
-    // 6. Respuesta
+    // 6. Email al dueño si quien cancela es otro (best effort — no falla si el email falla)
+    if (!esPropia && reserva.usuario_id) {
+      try {
+        const [authUserResult, perfilDuenoResult, textoContactoResult] = await Promise.all([
+          supabase.auth.admin.getUserById(reserva.usuario_id),
+          supabase.from('usuarios').select('nombre, apellidos').eq('id', reserva.usuario_id).maybeSingle(),
+          supabase.from('textos_admin').select('contenido')
+            .eq('clave', 'datos_contacto_administracion')
+            .eq('comunidad_id', reserva.comunidad_id)
+            .maybeSingle(),
+        ])
+
+        const emailDueno = authUserResult.data.user?.email
+        const perfilDueno = perfilDuenoResult.data
+
+        if (emailDueno && perfilDueno) {
+          const inicio = new Date(reserva.inicio)
+          const fin = new Date(reserva.fin)
+          const opcionesMadrid = { timeZone: 'Europe/Madrid' } as const
+          const fechaLarga = inicio.toLocaleDateString('es-ES', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', ...opcionesMadrid,
+          })
+          const horaInicio = inicio.toLocaleTimeString('es-ES', {
+            hour: '2-digit', minute: '2-digit', ...opcionesMadrid,
+          })
+          const horaFin = fin.toLocaleTimeString('es-ES', {
+            hour: '2-digit', minute: '2-digit', ...opcionesMadrid,
+          })
+          const cruzaMedianoche =
+            inicio.toLocaleDateString('es-ES', opcionesMadrid) !==
+            fin.toLocaleDateString('es-ES', opcionesMadrid)
+
+          const rolCancelador = perfil?.rol ?? ''
+          const canceladoPor = ['admin', 'super_admin'].includes(rolCancelador)
+            ? 'la administración'
+            : 'el vigilante'
+
+          const html = plantillaReservaCancelada({
+            nombreVecino: `${perfilDueno.nombre} ${perfilDueno.apellidos}`,
+            nombreRecurso: reserva.recursos?.nombre ?? 'el recurso',
+            fechaLarga,
+            horaInicio,
+            horaFin,
+            cruzaMedianoche,
+            motivoCancelacion: motivo || 'Cancelación por administración',
+            canceladoPor,
+            datosContacto: textoContactoResult.data?.contenido ?? '',
+          })
+          const emailResult = await enviarEmailBrevo({
+            to: {
+              email: emailDueno,
+              name: `${perfilDueno.nombre} ${perfilDueno.apellidos}`,
+            },
+            subject: `Reserva cancelada — ${reserva.recursos?.nombre ?? 'recurso'}`,
+            htmlContent: html,
+          })
+          console.log('Email cancelación reserva:', emailResult)
+        }
+      } catch (emailErr) {
+        console.error('Error enviando email cancelación:', emailErr)
+      }
+    }
+
+    // 7. Respuesta
     return respuesta(200, null, { fue_tardia: fueTardia })
   } catch (err) {
     console.error('Error inesperado:', err)
