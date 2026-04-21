@@ -22,6 +22,7 @@ import AdminReservas from './pages/admin/AdminReservas'
 import AdminReservaNueva from './pages/admin/AdminReservaNueva'
 import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
 import AdminTestEmails from './pages/admin/AdminTestEmails'
+import Perfil from './pages/Perfil'
 
 export default function App() {
   return (
@@ -49,6 +50,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <MisReservas />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute>
+                <Perfil />
               </ProtectedRoute>
             }
           />

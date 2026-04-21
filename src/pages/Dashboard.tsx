@@ -122,9 +122,14 @@ export default function Dashboard() {
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-teal-100">
-          <Link to="/mis-reservas" className="text-sm text-teal-600">
-            Mis reservas
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/mis-reservas" className="text-sm text-teal-600">
+              Mis reservas
+            </Link>
+            <Link to="/perfil" className="text-sm text-teal-600">
+              Mi perfil
+            </Link>
+          </div>
           <button
             onClick={signOut}
             className="text-sm text-gray-500 hover:text-gray-700"
