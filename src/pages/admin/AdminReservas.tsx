@@ -41,6 +41,7 @@ export default function AdminReservas() {
   const [filtroFecha, setFiltroFecha] = useState(searchParams.get('fecha') || searchParams.get('dia') || '')
   const [filtroRecurso, setFiltroRecurso] = useState(searchParams.get('recurso') || '')
   const [filtroVivienda, setFiltroVivienda] = useState(searchParams.get('vivienda') || '')
+  const [filtroUsuario, setFiltroUsuario] = useState(searchParams.get('usuario') || '')
   const [pagina, setPagina] = useState(0)
 
   // Opciones para dropdowns
@@ -72,7 +73,7 @@ export default function AdminReservas() {
 
   useEffect(() => {
     cargar()
-  }, [pagina, filtroEstado, filtroFecha, filtroRecurso, filtroVivienda])
+  }, [pagina, filtroEstado, filtroFecha, filtroRecurso, filtroVivienda, filtroUsuario])
 
   async function cargar() {
     setCargando(true)
@@ -91,6 +92,7 @@ export default function AdminReservas() {
     }
     if (filtroRecurso) query = query.eq('recurso_id', filtroRecurso)
     if (filtroVivienda) query = query.eq('vivienda_id', filtroVivienda)
+    if (filtroUsuario) query = query.eq('usuario_id', filtroUsuario)
 
     query = query
       .order('inicio', { ascending: false })
@@ -133,6 +135,7 @@ export default function AdminReservas() {
     if (filtroFecha) params.fecha = filtroFecha
     if (filtroRecurso) params.recurso = filtroRecurso
     if (filtroVivienda) params.vivienda = filtroVivienda
+    if (filtroUsuario) params.usuario = filtroUsuario
     setSearchParams(params)
   }
 
@@ -317,9 +320,9 @@ export default function AdminReservas() {
             >
               Filtrar
             </button>
-            {(filtroEstado || filtroFecha || filtroRecurso || filtroVivienda) && (
+            {(filtroEstado || filtroFecha || filtroRecurso || filtroVivienda || filtroUsuario) && (
               <button
-                onClick={() => { setFiltroEstado(''); setFiltroFecha(''); setFiltroRecurso(''); setFiltroVivienda(''); setPagina(0); setSearchParams({}) }}
+                onClick={() => { setFiltroEstado(''); setFiltroFecha(''); setFiltroRecurso(''); setFiltroVivienda(''); setFiltroUsuario(''); setPagina(0); setSearchParams({}) }}
                 className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
               >
                 Limpiar
@@ -327,6 +330,18 @@ export default function AdminReservas() {
             )}
           </div>
         </div>
+
+        {filtroUsuario && (
+          <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 text-sm text-indigo-800">
+            <span>Mostrando reservas de un usuario concreto</span>
+            <button
+              onClick={() => { setFiltroUsuario(''); setSearchParams({}) }}
+              className="ml-auto text-indigo-500 hover:text-indigo-700 font-medium"
+            >
+              × Quitar filtro
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">{total} reserva{total !== 1 ? 's' : ''}</p>

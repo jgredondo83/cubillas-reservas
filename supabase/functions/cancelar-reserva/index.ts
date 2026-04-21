@@ -98,7 +98,7 @@ Deno.serve(async (req: Request) => {
           supabase.auth.admin.getUserById(reserva.usuario_id),
           supabase.from('usuarios').select('nombre, apellidos').eq('id', reserva.usuario_id).maybeSingle(),
           supabase.from('textos_admin').select('contenido')
-            .eq('clave', 'datos_contacto_administracion')
+            .eq('clave', 'contacto_general')
             .eq('comunidad_id', reserva.comunidad_id)
             .maybeSingle(),
         ])

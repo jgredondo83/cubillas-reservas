@@ -23,7 +23,8 @@
       "Bash(supabase --version)",
       "Bash(npx supabase:*)",
       "Bash(openssl rand:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(wait)"
     ]
   }
 }

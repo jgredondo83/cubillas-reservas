@@ -83,14 +83,14 @@ Deno.serve(async (req: Request) => {
       .eq('id', perfilObjetivo.vivienda_id)
       .single()
 
-    // Cargar datos de contacto de admin (para mensajes de error)
-    const { data: textoContacto } = await supabase
+    // Cargar contacto_administracion para mensajes de error (bloqueos, impagos)
+    const { data: textoAdmin } = await supabase
       .from('textos_admin')
       .select('contenido')
-      .eq('clave', 'datos_contacto_administracion')
+      .eq('clave', 'contacto_administracion')
       .eq('comunidad_id', perfilObjetivo.comunidad_id)
       .maybeSingle()
-    const datosContacto = textoContacto?.contenido ?? ''
+    const datosContactoAdmin = textoAdmin?.contenido ?? ''
 
     const esEnNombreDe = perfilObjetivo.id !== user.id
 
@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
         : 'Esta vivienda tiene pagos pendientes con la administración.'
       const instrucciones = esEnNombreDe
         ? 'Un administrador puede gestionar el bloqueo desde el panel de admin.'
-        : `Contacta con administración para regularizar la situación. ${datosContacto}`
+        : `Contacta con administración para regularizar la situación. ${datosContactoAdmin}`
       return respuesta(403, mensajePrincipal + '\n\n' + instrucciones)
     }
 
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
 
       instrucciones = esEnNombreDe
         ? 'Un administrador puede desbloquear la cuenta desde el panel de admin si procede.'
-        : `Contacta con administración para más información. ${datosContacto}`
+        : `Contacta con administración para más información. ${datosContactoAdmin}`
 
       return respuesta(403, mensajePrincipal + '\n\n' + instrucciones)
     }
@@ -317,8 +317,15 @@ Deno.serve(async (req: Request) => {
 
     // 17. Email de confirmación (best effort — no falla la reserva si falla el email)
     try {
-      const { data: authUserData } = await supabase.auth.admin.getUserById(perfilObjetivo.id)
-      const emailDestino = authUserData.user?.email
+      const [authUserData, textoGeneral] = await Promise.all([
+        supabase.auth.admin.getUserById(perfilObjetivo.id),
+        supabase.from('textos_admin').select('contenido')
+          .eq('clave', 'contacto_general')
+          .eq('comunidad_id', reserva.comunidad_id)
+          .maybeSingle(),
+      ])
+      const emailDestino = authUserData.data.user?.email
+      const datosContactoGeneral = textoGeneral.data?.contenido ?? ''
       if (emailDestino) {
         const cruzaMedianoche = finTotalMin >= 24 * 60
         const fechaLarga = new Date(fecha + 'T12:00:00Z').toLocaleDateString('es-ES', {
@@ -337,7 +344,7 @@ Deno.serve(async (req: Request) => {
           urlMisReservas: `${appUrl}/mis-reservas`,
           costeEuros: config.coste_euros as number | undefined,
           fianzaEuros: config.fianza_euros as number | undefined,
-          datosContacto,
+          datosContacto: datosContactoGeneral,
         })
         const subject = estadoInicial === 'pendiente_pago'
           ? `Reserva pendiente de pago — ${recurso.nombre}`

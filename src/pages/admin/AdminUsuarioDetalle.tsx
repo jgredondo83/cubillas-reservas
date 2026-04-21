@@ -8,7 +8,7 @@ import ModalConfirmacion from '../../components/admin/ModalConfirmacion'
 import { supabase } from '../../lib/supabase'
 import { useTemaAdmin } from '../../hooks/useTemaAdmin'
 import { useAuth } from '../../hooks/useAuth'
-import { gestionarUsuario } from '../../lib/api'
+import { gestionarUsuario, cancelarReserva, marcarAsistencia, registrarPago } from '../../lib/api'
 import type { Usuario, RolUsuario, EstadoUsuario, EstadoReserva } from '../../types/database'
 
 type AccionUsuario = 'verificar' | 'bloquear' | 'desbloquear' | 'cambiar_rol' | 'eliminar' | 'cambiar_email' | null
@@ -19,6 +19,9 @@ interface ReservaHistorial {
   fin: string
   estado: EstadoReserva
   recurso_nombre: string
+  recurso_tipo: string
+  recurso_coste: number
+  recurso_fianza: number
 }
 
 interface LogEntry {
@@ -75,6 +78,17 @@ export default function AdminUsuarioDetalle() {
   const [stats, setStats] = useState<Stats>({ total: 0, completadas: 0, noPresentadas: 0, canceladas: 0 })
   const [logs, setLogs] = useState<LogEntry[]>([])
 
+  // Acciones sobre reservas del historial
+  const [reservaAccionDetalle, setReservaAccionDetalle] = useState<ReservaHistorial | null>(null)
+  const [accionTipoDetalle, setAccionTipoDetalle] = useState<'cancelar' | 'presentado' | 'no_presentado' | 'deshacer' | null>(null)
+  const [procesandoReservaDetalle, setProcesandoReservaDetalle] = useState(false)
+  // Modal pago reserva
+  const [reservaPagoDetalle, setReservaPagoDetalle] = useState<ReservaHistorial | null>(null)
+  const [pagoCantidadD, setPagoCantidadD] = useState('')
+  const [pagoFianzaD, setPagoFianzaD] = useState('')
+  const [pagoMetodoD, setPagoMetodoD] = useState<'efectivo' | 'bizum' | 'transferencia' | 'otros'>('efectivo')
+  const [pagoReferenciaD, setPagoReferenciaD] = useState('')
+
   useEffect(() => {
     cargar()
     cargarViviendas()
@@ -126,19 +140,25 @@ export default function AdminUsuarioDetalle() {
     if (!id) return
     const { data } = await supabase
       .from('reservas')
-      .select('id, inicio, fin, estado, recursos(nombre)')
+      .select('id, inicio, fin, estado, recursos(nombre, tipo, config)')
       .eq('usuario_id', id)
       .order('inicio', { ascending: false })
       .limit(10)
 
     setReservas(
-      (data || []).map((r: Record<string, unknown>) => ({
-        id: r.id as string,
-        inicio: r.inicio as string,
-        fin: r.fin as string,
-        estado: r.estado as EstadoReserva,
-        recurso_nombre: (r.recursos as { nombre: string } | null)?.nombre || '---',
-      }))
+      (data || []).map((r: Record<string, unknown>) => {
+        const rec = r.recursos as { nombre: string; tipo: string; config: Record<string, unknown> } | null
+        return {
+          id: r.id as string,
+          inicio: r.inicio as string,
+          fin: r.fin as string,
+          estado: r.estado as EstadoReserva,
+          recurso_nombre: rec?.nombre || '---',
+          recurso_tipo: rec?.tipo || '',
+          recurso_coste: (rec?.config?.coste_euros as number) ?? 0,
+          recurso_fianza: (rec?.config?.fianza_euros as number) ?? 0,
+        }
+      })
     )
   }
 
@@ -286,6 +306,106 @@ export default function AdminUsuarioDetalle() {
 
     setAccionPendiente(null)
     setProcesando(false)
+  }
+
+  function accionesReservaDetalle(r: ReservaHistorial) {
+    const activa = ['confirmada', 'pendiente_pago', 'pagado'].includes(r.estado)
+    const marcada = ['completada', 'no_presentado', 'pendiente_no_presentado'].includes(r.estado)
+    return [
+      {
+        label: 'Registrar pago',
+        onClick: () => {
+          setReservaPagoDetalle(r)
+          setPagoCantidadD(r.recurso_coste ? String(r.recurso_coste) : '')
+          setPagoFianzaD(r.recurso_fianza ? String(r.recurso_fianza) : '')
+          setPagoMetodoD('efectivo')
+          setPagoReferenciaD('')
+        },
+        oculto: r.estado !== 'pendiente_pago',
+      },
+      {
+        label: 'Cancelar',
+        onClick: () => { setReservaAccionDetalle(r); setAccionTipoDetalle('cancelar') },
+        destructivo: true,
+        oculto: !activa,
+      },
+      {
+        label: 'Marcar presentado',
+        onClick: () => { setReservaAccionDetalle(r); setAccionTipoDetalle('presentado') },
+        oculto: !activa && r.estado !== 'pendiente_no_presentado',
+      },
+      {
+        label: 'Marcar no presentado',
+        onClick: () => { setReservaAccionDetalle(r); setAccionTipoDetalle('no_presentado') },
+        oculto: !activa && r.estado !== 'pendiente_no_presentado',
+      },
+      {
+        label: 'Deshacer marca',
+        onClick: () => { setReservaAccionDetalle(r); setAccionTipoDetalle('deshacer') },
+        oculto: !marcada,
+      },
+    ]
+  }
+
+  async function ejecutarAccionReserva(motivo?: string) {
+    if (!reservaAccionDetalle || !accionTipoDetalle) return
+    setProcesandoReservaDetalle(true)
+    setError(null)
+
+    let err: string | undefined
+    if (accionTipoDetalle === 'cancelar') {
+      const result = await cancelarReserva({ reserva_id: reservaAccionDetalle.id, motivo })
+      err = result.error
+    } else {
+      const result = await marcarAsistencia({
+        reserva_id: reservaAccionDetalle.id,
+        resultado: accionTipoDetalle === 'deshacer' ? 'deshacer' : accionTipoDetalle,
+      })
+      err = result.error
+    }
+
+    if (err) {
+      setError(err)
+    } else {
+      setExito('Acción ejecutada')
+      cargarReservas()
+      cargarStats()
+      setTimeout(() => setExito(null), 3000)
+    }
+
+    setReservaAccionDetalle(null)
+    setAccionTipoDetalle(null)
+    setProcesandoReservaDetalle(false)
+  }
+
+  async function ejecutarPagoDetalle() {
+    if (!reservaPagoDetalle) return
+    const cantidad = parseFloat(pagoCantidadD)
+    if (isNaN(cantidad) || cantidad < 0) { setError('Introduce una cantidad válida'); return }
+    if (pagoMetodoD === 'otros' && !pagoReferenciaD.trim()) { setError('La referencia es obligatoria para "Otros"'); return }
+    setProcesandoReservaDetalle(true)
+    setError(null)
+
+    const fianza = pagoFianzaD ? parseFloat(pagoFianzaD) : undefined
+    const { error: err } = await registrarPago({
+      reserva_id: reservaPagoDetalle.id,
+      cantidad_euros: cantidad,
+      fianza_euros: fianza && !isNaN(fianza) ? fianza : undefined,
+      metodo: pagoMetodoD,
+      referencia: pagoReferenciaD.trim() || undefined,
+    })
+
+    if (err) {
+      setError(err)
+    } else {
+      setExito('Pago registrado')
+      cargarReservas()
+      cargarStats()
+      setTimeout(() => setExito(null), 3000)
+    }
+
+    setReservaPagoDetalle(null)
+    setProcesandoReservaDetalle(false)
   }
 
   function formatFecha(iso: string) {
@@ -537,15 +657,19 @@ export default function AdminUsuarioDetalle() {
                     <th className="text-left py-2 font-medium text-gray-600">Horario</th>
                     <th className="text-left py-2 font-medium text-gray-600 hidden sm:table-cell">Recurso</th>
                     <th className="text-left py-2 font-medium text-gray-600">Estado</th>
+                    <th className="py-2 w-8"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {reservas.map((r) => (
-                    <tr key={r.id}>
+                    <tr key={r.id} className="hover:bg-gray-50">
                       <td className="py-2 text-gray-800">{formatFecha(r.inicio)}</td>
                       <td className="py-2 text-gray-600">{formatHora(r.inicio)}-{formatHora(r.fin)}</td>
                       <td className="py-2 text-gray-600 hidden sm:table-cell">{r.recurso_nombre}</td>
                       <td className="py-2"><BadgeEstado estado={r.estado} tipo="reserva" /></td>
+                      <td className="py-2 pl-1">
+                        <DropdownAcciones acciones={accionesReservaDetalle(r)} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -646,6 +770,75 @@ export default function AdminUsuarioDetalle() {
                 className="flex-1 h-10 rounded-lg text-sm text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-colors"
               >
                 {procesando ? 'Procesando...' : 'Bloquear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal acciones reserva */}
+      {reservaAccionDetalle && accionTipoDetalle && (
+        <ModalConfirmacion
+          titulo={
+            accionTipoDetalle === 'cancelar' ? 'Cancelar reserva'
+            : accionTipoDetalle === 'presentado' ? 'Marcar como presentado'
+            : accionTipoDetalle === 'no_presentado' ? 'Marcar como no presentado'
+            : 'Deshacer marca'
+          }
+          mensaje={`¿Confirmar acción sobre reserva del ${formatFecha(reservaAccionDetalle.inicio)} a las ${formatHora(reservaAccionDetalle.inicio)} (${reservaAccionDetalle.recurso_nombre})?`}
+          textoConfirmar="Confirmar"
+          destructivo={accionTipoDetalle === 'cancelar' || accionTipoDetalle === 'no_presentado'}
+          requiereMotivo={accionTipoDetalle === 'cancelar'}
+          cargando={procesandoReservaDetalle}
+          onConfirmar={ejecutarAccionReserva}
+          onCancelar={() => { setReservaAccionDetalle(null); setAccionTipoDetalle(null) }}
+        />
+      )}
+
+      {/* Modal registrar pago reserva */}
+      {reservaPagoDetalle && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-lg">
+            <h2 className="font-bold text-gray-800 mb-1">Registrar pago</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {reservaPagoDetalle.recurso_nombre} — {formatFecha(reservaPagoDetalle.inicio)} {formatHora(reservaPagoDetalle.inicio)}
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Cantidad (€) *</label>
+                <input type="number" min="0" step="0.01" value={pagoCantidadD} onChange={(e) => setPagoCantidadD(e.target.value)}
+                  placeholder="50" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Fianza (€)</label>
+                <input type="number" min="0" step="0.01" value={pagoFianzaD} onChange={(e) => setPagoFianzaD(e.target.value)}
+                  placeholder="100" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Método de pago *</label>
+                <select value={pagoMetodoD} onChange={(e) => setPagoMetodoD(e.target.value as typeof pagoMetodoD)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="bizum">Bizum</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Referencia{pagoMetodoD === 'otros' ? ' *' : ''}</label>
+                <input type="text" value={pagoReferenciaD} onChange={(e) => setPagoReferenciaD(e.target.value)}
+                  placeholder={pagoMetodoD === 'otros' ? 'Obligatorio: describe el método' : 'Nº transferencia, concepto…'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setReservaPagoDetalle(null)}
+                className="flex-1 h-10 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={ejecutarPagoDetalle} disabled={procesandoReservaDetalle || !pagoCantidadD}
+                className={`flex-1 h-10 rounded-lg text-sm text-white ${tema.btnPrimario} ${tema.btnPrimarioHover} disabled:opacity-50 transition-colors`}>
+                {procesandoReservaDetalle ? 'Registrando…' : 'Registrar pago'}
               </button>
             </div>
           </div>

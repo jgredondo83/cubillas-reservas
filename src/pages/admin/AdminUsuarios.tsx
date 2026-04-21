@@ -9,6 +9,8 @@ import type { Usuario, RolUsuario, EstadoUsuario } from '../../types/database'
 
 const PAGE_SIZE = 20
 
+type OrdenActivas = 'asc' | 'desc' | null
+
 export default function AdminUsuarios() {
   const tema = useTemaAdmin()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -16,18 +18,41 @@ export default function AdminUsuarios() {
   const [total, setTotal] = useState(0)
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState(searchParams.get('q') || '')
-  const [filtroEstado, setFiltroEstado] = useState<EstadoUsuario | ''>(
-    (searchParams.get('estado') as EstadoUsuario) || ''
-  )
+  const [filtroEstado, setFiltroEstado] = useState<EstadoUsuario | ''>((searchParams.get('estado') as EstadoUsuario) || '')
   const [filtroRol, setFiltroRol] = useState<RolUsuario | ''>('')
+  const [filtroSoloActivas, setFiltroSoloActivas] = useState(false)
   const [pagina, setPagina] = useState(0)
+
+  // Columna reservas activas
+  const [reservasActivas, setReservasActivas] = useState<Record<string, number>>({})
+  const [ordenActivas, setOrdenActivas] = useState<OrdenActivas>(null)
 
   useEffect(() => {
     cargar()
-  }, [pagina, filtroEstado, filtroRol])
+  }, [pagina, filtroEstado, filtroRol, filtroSoloActivas])
 
   async function cargar() {
     setCargando(true)
+    const ahora = new Date().toISOString()
+
+    // Si filtro activo: pre-cargar IDs de usuarios con reservas activas
+    let idsConActivas: string[] = []
+    if (filtroSoloActivas) {
+      const { data: actData } = await supabase
+        .from('reservas')
+        .select('usuario_id')
+        .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
+        .gte('fin', ahora)
+      idsConActivas = [...new Set((actData || []).map((r) => r.usuario_id as string))]
+      if (idsConActivas.length === 0) {
+        setUsuarios([])
+        setTotal(0)
+        setReservasActivas({})
+        setCargando(false)
+        return
+      }
+    }
+
     let query = supabase
       .from('usuarios')
       .select('*, viviendas(referencia, bloqueada_por_impago)', { count: 'exact' })
@@ -38,23 +63,47 @@ export default function AdminUsuarios() {
       const q = `%${busqueda.trim()}%`
       query = query.or(`nombre.ilike.${q},apellidos.ilike.${q},alias.ilike.${q},telefono.ilike.${q}`)
     }
+    if (filtroSoloActivas && idsConActivas.length > 0) {
+      query = query.in('id', idsConActivas)
+    }
 
     query = query
       .order('created_at', { ascending: false })
       .range(pagina * PAGE_SIZE, (pagina + 1) * PAGE_SIZE - 1)
 
     const { data, count } = await query
-    setUsuarios(
-      (data || []).map((u: Record<string, unknown>) => {
-        const viv = u.viviendas as { referencia: string; bloqueada_por_impago: boolean } | null
-        return {
-          ...(u as unknown as Usuario),
-          vivienda_ref: viv?.referencia || '—',
-          vivienda_bloqueada: viv?.bloqueada_por_impago ?? false,
-        }
-      })
-    )
+
+    const mapped = (data || []).map((u: Record<string, unknown>) => {
+      const viv = u.viviendas as { referencia: string; bloqueada_por_impago: boolean } | null
+      return {
+        ...(u as unknown as Usuario),
+        vivienda_ref: viv?.referencia || '—',
+        vivienda_bloqueada: viv?.bloqueada_por_impago ?? false,
+      }
+    })
+    setUsuarios(mapped)
     setTotal(count ?? 0)
+
+    // Batch-cargar counts de reservas activas para los usuarios de esta página
+    if (mapped.length > 0) {
+      const ids = mapped.map((u) => u.id)
+      const { data: activasData } = await supabase
+        .from('reservas')
+        .select('usuario_id')
+        .in('usuario_id', ids)
+        .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
+        .gte('fin', ahora)
+
+      const countMap: Record<string, number> = {}
+      for (const r of activasData || []) {
+        const uid = r.usuario_id as string
+        countMap[uid] = (countMap[uid] || 0) + 1
+      }
+      setReservasActivas(countMap)
+    } else {
+      setReservasActivas({})
+    }
+
     setCargando(false)
   }
 
@@ -67,6 +116,19 @@ export default function AdminUsuarios() {
     cargar()
   }
 
+  function toggleOrdenActivas() {
+    setOrdenActivas((prev) => prev === null ? 'desc' : prev === 'desc' ? 'asc' : null)
+  }
+
+  // Ordenar dentro de la página actual (client-side)
+  const usuariosOrdenados = ordenActivas
+    ? [...usuarios].sort((a, b) => {
+        const ca = reservasActivas[a.id] ?? 0
+        const cb = reservasActivas[b.id] ?? 0
+        return ordenActivas === 'asc' ? ca - cb : cb - ca
+      })
+    : usuarios
+
   const totalPaginas = Math.ceil(total / PAGE_SIZE)
 
   return (
@@ -74,8 +136,8 @@ export default function AdminUsuarios() {
       <div className="space-y-4">
         {/* Filtros */}
         <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
               <input
                 type="text"
                 value={busqueda}
@@ -108,6 +170,15 @@ export default function AdminUsuarios() {
               <option value="super_admin">Super Admin</option>
               <option value="lectura">Lectura</option>
             </select>
+            <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer border border-gray-300 rounded-lg hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={filtroSoloActivas}
+                onChange={(e) => { setFiltroSoloActivas(e.target.checked); setPagina(0) }}
+                className="rounded accent-indigo-600"
+              />
+              Solo con activas
+            </label>
             <button
               onClick={buscar}
               className={`px-4 py-2 rounded-lg text-sm text-white ${tema.btnPrimario} ${tema.btnPrimarioHover} transition-colors`}
@@ -133,7 +204,7 @@ export default function AdminUsuarios() {
           <div className="flex justify-center py-12">
             <div className="animate-spin h-6 w-6 border-4 border-gray-200 rounded-full border-t-indigo-600" />
           </div>
-        ) : usuarios.length === 0 ? (
+        ) : usuariosOrdenados.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
             No se encontraron usuarios
           </div>
@@ -148,45 +219,70 @@ export default function AdminUsuarios() {
                     <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Teléfono</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Rol</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Estado</th>
+                    <th
+                      className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell cursor-pointer select-none hover:text-indigo-600 transition-colors"
+                      onClick={toggleOrdenActivas}
+                      title="Ordenar por reservas activas"
+                    >
+                      Activas{' '}
+                      <span className="text-xs">
+                        {ordenActivas === 'desc' ? '↓' : ordenActivas === 'asc' ? '↑' : '↕'}
+                      </span>
+                    </th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {usuarios.map((u) => (
-                    <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div>
-                          <Link to={`/admin/usuarios/${u.id}`} className={`font-medium ${tema.acento} hover:underline`}>
-                            {u.nombre} {u.apellidos}
+                  {usuariosOrdenados.map((u) => {
+                    const activas = reservasActivas[u.id] ?? 0
+                    return (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div>
+                            <Link to={`/admin/usuarios/${u.id}`} className={`font-medium ${tema.acento} hover:underline`}>
+                              {u.nombre} {u.apellidos}
+                            </Link>
+                            {u.alias && <p className="text-xs text-gray-400">{u.alias}</p>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <Link to={`/admin/viviendas/${u.vivienda_id}`} className={`text-gray-600 hover:${tema.acento} hover:underline`}>
+                            {u.vivienda_ref}
                           </Link>
-                          {u.alias && <p className="text-xs text-gray-400">{u.alias}</p>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <Link to={`/admin/viviendas/${u.vivienda_id}`} className={`text-gray-600 hover:${tema.acento} hover:underline`}>
-                          {u.vivienda_ref}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{u.telefono}</td>
-                      <td className="px-4 py-3"><BadgeRol rol={u.rol} /></td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          <BadgeEstado estado={u.estado} />
-                          {u.vivienda_bloqueada && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700" title="La vivienda de este usuario está bloqueada por impago. No puede reservar aunque su cuenta esté activa.">Viv. impago</span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{u.telefono}</td>
+                        <td className="px-4 py-3"><BadgeRol rol={u.rol} /></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <BadgeEstado estado={u.estado} />
+                            {u.vivienda_bloqueada && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700" title="La vivienda está bloqueada por impago">
+                                Viv. impago
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 hidden lg:table-cell">
+                          {activas > 0 ? (
+                            <Link
+                              to={`/admin/reservas?usuario=${u.id}`}
+                              className={`font-semibold ${tema.acento} hover:underline`}
+                              title="Ver reservas activas de este usuario"
+                            >
+                              {activas}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-300">0</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          to={`/admin/usuarios/${u.id}`}
-                          className={`text-sm ${tema.acento} hover:underline`}
-                        >
-                          Ver
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Link to={`/admin/usuarios/${u.id}`} className={`text-sm ${tema.acento} hover:underline`}>
+                            Ver
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -14,7 +14,7 @@ interface TestEmailsBody {
 
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://cubillas-reservas.vercel.app'
 const URL_MIS_RESERVAS = `${APP_URL}/mis-reservas`
-const DATOS_CONTACTO_DEMO =
+const DATOS_CONTACTO_FALLBACK =
   'Administración Parque del Cubillas\nTel: 958 000 000 · Horario: lun-vie 9:00-14:00\nadmin@cubillas.example'
 
 Deno.serve(async (req: Request) => {
@@ -44,13 +44,22 @@ Deno.serve(async (req: Request) => {
     // Solo super_admin
     const { data: perfil } = await supabase
       .from('usuarios')
-      .select('rol')
+      .select('rol, comunidad_id')
       .eq('id', user.id)
       .single()
 
     if (perfil?.rol !== 'super_admin') {
       return respuesta(403, 'Solo super_admin puede usar esta herramienta')
     }
+
+    // Cargar contacto_general desde BD (fallback a demo si no existe)
+    const { data: textoGeneral } = await supabase
+      .from('textos_admin')
+      .select('contenido')
+      .eq('clave', 'contacto_general')
+      .eq('comunidad_id', perfil.comunidad_id)
+      .maybeSingle()
+    const datosContacto = textoGeneral?.contenido ?? DATOS_CONTACTO_FALLBACK
 
     const body: TestEmailsBody = await req.json()
     const { tipo, destinatario } = body
@@ -86,7 +95,7 @@ Deno.serve(async (req: Request) => {
         cruzaMedianoche: false,
         estado: 'confirmada',
         urlMisReservas: URL_MIS_RESERVAS,
-        datosContacto: DATOS_CONTACTO_DEMO,
+        datosContacto: datosContacto,
       })
     } else if (tipo === 'recordatorio') {
       subject = 'Recordatorio: reserva en Pista de Tenis en 1 hora [TEST]'
@@ -98,7 +107,7 @@ Deno.serve(async (req: Request) => {
         horaFin: '11:30',
         cruzaMedianoche: false,
         urlMisReservas: URL_MIS_RESERVAS,
-        datosContacto: DATOS_CONTACTO_DEMO,
+        datosContacto: datosContacto,
       })
     } else {
       // cancelada
@@ -112,7 +121,7 @@ Deno.serve(async (req: Request) => {
         cruzaMedianoche: true,
         motivoCancelacion: 'Mantenimiento urgente del local',
         canceladoPor: 'la administración',
-        datosContacto: DATOS_CONTACTO_DEMO,
+        datosContacto: datosContacto,
       })
     }
 
