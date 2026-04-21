@@ -125,7 +125,7 @@ export interface Reserva {
   marcado_presentado_por: string | null
   marcado_en: string | null
   creado_por: string
-  created_at: string
+  creado_en: string
   updated_at: string
 }
 

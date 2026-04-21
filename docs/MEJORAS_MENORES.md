@@ -35,3 +35,5 @@
   * marcar-asistencia (bloqueo automático por no-presentados).
   * gestionar-usuario-admin (bloqueo manual).
   * En ambos, al desbloquear, restaurar desde estado_previo.
+
+  - [ ] UX: si el vecino está bloqueado, el botón "Confirmar reserva" al final del wizard debe estar deshabilitado (no clickable) mientras se muestra el mensaje de bloqueo. Actualmente sigue activo y no hace nada al pulsar (la EF rechaza con 403, pero es confuso visualmente).

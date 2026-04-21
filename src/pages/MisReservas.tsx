@@ -123,7 +123,7 @@ export default function MisReservas() {
           <p className="text-xs text-amber-600 mt-2">
             Recuerda pagar en admin antes del{' '}
             {formatoFechaLarga(
-              new Date(new Date(reserva.created_at).getTime() + config.dias_limite_pago * 86400000)
+              new Date(new Date(reserva.creado_en).getTime() + config.dias_limite_pago * 86400000)
             )}
           </p>
         )}
