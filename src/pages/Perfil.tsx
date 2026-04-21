@@ -6,6 +6,7 @@ import type { NivelPadel, Vivienda } from '../types/database'
 
 const COMUNIDAD_ID = '00000000-0000-0000-0000-000000000001'
 
+
 const NIVELES_PADEL: { valor: NivelPadel; etiqueta: string }[] = [
   { valor: 'iniciacion', etiqueta: 'Iniciación — Estoy empezando' },
   { valor: 'basico', etiqueta: 'Básico — Juego de vez en cuando' },
@@ -21,11 +22,10 @@ export default function Perfil() {
   const [apellidos, setApellidos] = useState('')
   const [alias, setAlias] = useState('')
   const [telefono, setTelefono] = useState('')
-  const [viviendaId, setViviendaId] = useState('')
   const [nivelPadel, setNivelPadel] = useState<NivelPadel | ''>('')
 
+  const [viviendaRef, setViviendaRef] = useState<string>('—')
   const [viviendas, setViviendas] = useState<Vivienda[]>([])
-  const [cargandoViviendas, setCargandoViviendas] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [erroresCampo, setErroresCampo] = useState<Record<string, string>>({})
   const [toast, setToast] = useState<{ tipo: 'ok' | 'error'; mensaje: string } | null>(null)
@@ -37,9 +37,15 @@ export default function Perfil() {
     setApellidos(perfil.apellidos ?? '')
     setAlias(perfil.alias ?? '')
     setTelefono(perfil.telefono ?? '')
-    setViviendaId(perfil.vivienda_id ?? '')
     setNivelPadel((perfil.nivel_padel_autoevaluado as NivelPadel | null) ?? '')
   }, [perfil])
+
+  // Resolver referencia de vivienda cuando carguen las viviendas o el perfil
+  useEffect(() => {
+    if (!perfil || viviendas.length === 0) return
+    const v = viviendas.find((x) => x.id === perfil.vivienda_id)
+    setViviendaRef(v?.referencia ?? '—')
+  }, [perfil, viviendas])
 
   useEffect(() => {
     supabase
@@ -49,7 +55,6 @@ export default function Perfil() {
       .order('referencia')
       .then(({ data }) => {
         setViviendas((data as Vivienda[]) ?? [])
-        setCargandoViviendas(false)
       })
   }, [])
 
@@ -66,7 +71,6 @@ export default function Perfil() {
     if (!telLimpio || telLimpio.length < 9) {
       errores.telefono = 'Teléfono obligatorio (mínimo 9 dígitos)'
     }
-    if (!viviendaId) errores.vivienda = 'Selecciona una vivienda'
     setErroresCampo(errores)
     return Object.keys(errores).length === 0
   }
@@ -84,7 +88,6 @@ export default function Perfil() {
         alias: alias.trim() || null,
         telefono: telefono.trim(),
         nivel_padel_autoevaluado: nivelPadel || null,
-        vivienda_id: viviendaId,
       })
       .eq('id', user.id)
 
@@ -229,35 +232,13 @@ export default function Perfil() {
             </div>
           </div>
 
-          {/* Vivienda */}
+          {/* Vivienda (solo lectura) */}
           <div>
-            <label htmlFor="vivienda" className="block text-sm font-medium text-gray-700 mb-1">
-              Vivienda *
-            </label>
-            {cargandoViviendas ? (
-              <p className="text-sm text-gray-400">Cargando viviendas…</p>
-            ) : (
-              <select
-                id="vivienda"
-                value={viviendaId}
-                onChange={(e) => setViviendaId(e.target.value)}
-                className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none bg-white"
-              >
-                <option value="">Selecciona tu vivienda</option>
-                {viviendas.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.referencia}
-                  </option>
-                ))}
-              </select>
-            )}
-            {erroresCampo.vivienda && <p className="text-sm text-red-600 mt-1">{erroresCampo.vivienda}</p>}
-            <div className="mt-2 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              <span className="text-amber-500 mt-0.5 shrink-0">⚠️</span>
-              <p className="text-xs text-amber-800">
-                Si cambias de vivienda, avisa a administración por si hay que ajustar algún registro.
-              </p>
-            </div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Vivienda</p>
+            <p className="text-sm text-gray-500">
+              Para cambiar de vivienda, contacta con administración. Vivienda actual:{' '}
+              <span className="font-medium text-gray-700">{viviendaRef}</span>
+            </p>
           </div>
 
           <hr className="border-gray-100" />
