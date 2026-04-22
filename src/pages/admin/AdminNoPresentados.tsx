@@ -3,7 +3,6 @@ import AdminLayout from '../../layouts/AdminLayout'
 import ModalConfirmacion from '../../components/admin/ModalConfirmacion'
 import { marcarAsistencia, cancelarReserva } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
-import { useTemaAdmin } from '../../hooks/useTemaAdmin'
 import { formatoFechaCorta, formatoHoraDesdeDate } from '../../lib/fechas'
 
 type Accion = 'no_presentado' | 'presentado' | 'deshacer' | 'cancelar'
@@ -31,7 +30,6 @@ interface EstadoModal {
 }
 
 export default function AdminNoPresentados() {
-  const tema = useTemaAdmin()
   const [reservas, setReservas] = useState<ReservaNP[]>([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState<EstadoModal | null>(null)
@@ -55,7 +53,7 @@ export default function AdminNoPresentados() {
       .not('usuario_id', 'is', null)
       .order('inicio', { ascending: true })
 
-    setReservas((data as ReservaNP[]) ?? [])
+    setReservas((data as unknown as ReservaNP[]) ?? [])
     setCargando(false)
   }
 
