@@ -8,6 +8,10 @@ import {
   formatoHoraDesdeDate,
   emojiRecurso,
 } from '../lib/fechas'
+import DOMPurify from 'dompurify'
+
+const ALLOWED_TAGS = ['strong', 'em', 'br', 'a']
+const ALLOWED_ATTR = ['href', 'target', 'rel']
 
 interface ReservaConRecurso extends Reserva {
   recursos: Pick<Recurso, 'nombre' | 'tipo'>
@@ -18,6 +22,7 @@ export default function Dashboard() {
   const [proximasReservas, setProximasReservas] = useState<ReservaConRecurso[]>([])
   const [totalProximas, setTotalProximas] = useState(0)
   const [cargando, setCargando] = useState(true)
+  const [mensajeBienvenida, setMensajeBienvenida] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -25,17 +30,30 @@ export default function Dashboard() {
     async function cargar() {
       const ahora = new Date().toISOString()
 
-      const { data, count } = await supabase
-        .from('reservas')
-        .select('*, recursos(nombre, tipo)', { count: 'exact' })
-        .eq('usuario_id', user!.id)
-        .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
-        .gte('inicio', ahora)
-        .order('inicio', { ascending: true })
-        .limit(3)
+      const [reservasRes, textoRes] = await Promise.all([
+        supabase
+          .from('reservas')
+          .select('*, recursos(nombre, tipo)', { count: 'exact' })
+          .eq('usuario_id', user!.id)
+          .in('estado', ['confirmada', 'pendiente_pago', 'pagado'])
+          .gte('inicio', ahora)
+          .order('inicio', { ascending: true })
+          .limit(3),
+        supabase
+          .from('textos_admin')
+          .select('contenido')
+          .eq('clave', 'mensaje_bienvenida')
+          .maybeSingle(),
+      ])
 
-      setProximasReservas((data as ReservaConRecurso[] | null) || [])
-      setTotalProximas(count || 0)
+      setProximasReservas((reservasRes.data as ReservaConRecurso[] | null) || [])
+      setTotalProximas(reservasRes.count || 0)
+
+      if (textoRes.data?.contenido) {
+        const seguro = DOMPurify.sanitize(textoRes.data.contenido, { ALLOWED_TAGS, ALLOWED_ATTR })
+        setMensajeBienvenida(seguro || null)
+      }
+
       setCargando(false)
     }
 
@@ -55,6 +73,14 @@ export default function Dashboard() {
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-4 rounded-lg mb-4">
             Tu perfil está pendiente de verificación por un administrador, pero ya puedes reservar.
           </div>
+        )}
+
+        {/* Mensaje de bienvenida */}
+        {mensajeBienvenida && (
+          <div
+            className="bg-teal-50 border border-teal-200 text-teal-800 text-sm p-4 rounded-lg mb-4 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: mensajeBienvenida }}
+          />
         )}
 
         {/* Botón reservar */}

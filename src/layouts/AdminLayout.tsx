@@ -25,7 +25,7 @@ const SECCIONES: NavItem[] = [
   { label: 'Bloqueos', path: '/admin/bloqueos', icon: '🚫', activo: false },
   { label: 'Avisos', path: '/admin/avisos', icon: '📢', activo: false },
   { label: 'Recursos', path: '/admin/recursos', icon: '🏸', activo: false },
-  { label: 'Textos', path: '/admin/textos', icon: '📝', activo: false },
+  { label: 'Textos', path: '/admin/textos', icon: '📝', activo: true },
   { label: 'Logs', path: '/admin/logs', icon: '📋', activo: false },
   { label: 'Test emails', path: '/admin/test-emails', icon: '📧', activo: true, soloSuper: true },
 ]
