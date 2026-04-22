@@ -26,6 +26,8 @@ import AdminNoPresentados from './pages/admin/AdminNoPresentados'
 import AdminTextos from './pages/admin/AdminTextos'
 import AdminAvisos from './pages/admin/AdminAvisos'
 import AdminBloqueosFranjas from './pages/admin/AdminBloqueosFranjas'
+import AdminManual from './pages/admin/AdminManual'
+import GuardaManual from './pages/guarda/GuardaManual'
 import Perfil from './pages/Perfil'
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad'
 import AvisoLegal from './pages/AvisoLegal'
@@ -91,6 +93,14 @@ export default function App() {
             element={
               <ProtectedRoute rolesPermitidos={['guarda', 'admin', 'super_admin']}>
                 <GuardaNuevaReserva />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/guarda/manual"
+            element={
+              <ProtectedRoute rolesPermitidos={['guarda', 'admin', 'super_admin']}>
+                <GuardaManual />
               </ProtectedRoute>
             }
           />
@@ -198,6 +208,14 @@ export default function App() {
             element={
               <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
                 <AdminBloqueosFranjas />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/manual"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminManual />
               </ProtectedRoute>
             }
           />

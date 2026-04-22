@@ -28,6 +28,7 @@ const SECCIONES: NavItem[] = [
   { label: 'Textos', path: '/admin/textos', icon: '📝', activo: true },
   { label: 'Logs', path: '/admin/logs', icon: '📋', activo: false },
   { label: 'Test emails', path: '/admin/test-emails', icon: '📧', activo: true, soloSuper: true },
+  { label: 'Manual', path: '/admin/manual', icon: '📖', activo: true },
 ]
 
 export default function AdminLayout({ children, titulo }: Props) {

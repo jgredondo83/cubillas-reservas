@@ -80,6 +80,12 @@ export default function GuardaDia() {
             >
               + Reserva
             </Link>
+            <Link
+              to="/guarda/manual"
+              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              📖 Manual
+            </Link>
             <button
               onClick={signOut}
               className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
