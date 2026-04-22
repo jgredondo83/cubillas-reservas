@@ -32,7 +32,7 @@ export interface ReservaGuarda {
   motivo_cancelacion: string | null
   notas: string | null
   recursos: Recurso
-  usuarios: Usuario
+  usuarios: Usuario | null  // null si el vecino fue eliminado por RGPD
   viviendas: Vivienda
 }
 
@@ -157,15 +157,21 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
 
         {/* Vecino */}
         <div className="mb-3">
-          <p className="text-sm font-medium text-slate-100">
-            {reserva.usuarios.nombre} {reserva.usuarios.apellidos} · {reserva.viviendas.referencia}
-          </p>
-          <a
-            href={`tel:${reserva.usuarios.telefono}`}
-            className="text-xs text-slate-400 hover:text-teal-400 transition-colors"
-          >
-            {reserva.usuarios.telefono}
-          </a>
+          {reserva.usuarios ? (
+            <>
+              <p className="text-sm font-medium text-slate-100">
+                {reserva.usuarios.nombre} {reserva.usuarios.apellidos} · {reserva.viviendas.referencia}
+              </p>
+              <a
+                href={`tel:${reserva.usuarios.telefono}`}
+                className="text-xs text-slate-400 hover:text-teal-400 transition-colors"
+              >
+                {reserva.usuarios.telefono}
+              </a>
+            </>
+          ) : (
+            <p className="text-sm italic text-slate-400">— Vecino eliminado — · {reserva.viviendas.referencia}</p>
+          )}
         </div>
 
         {/* Alerta pago pendiente */}
@@ -252,7 +258,7 @@ export default function TarjetaReservaGuarda({ reserva, onActualizar }: Props) {
           <div className="bg-slate-800 rounded-xl w-full max-w-sm p-6 border border-slate-700">
             <h2 className="font-bold text-slate-100 mb-2">¿Cancelar esta reserva?</h2>
             <p className="text-sm text-slate-400 mb-4">
-              Vas a cancelar la reserva de {reserva.usuarios.nombre} {reserva.usuarios.apellidos}. Esta acción quedará registrada a tu nombre como vigilante.
+              Vas a cancelar esta reserva{reserva.usuarios ? ` de ${reserva.usuarios.nombre} ${reserva.usuarios.apellidos}` : ''}. Esta acción quedará registrada a tu nombre como vigilante.
             </p>
 
             {esEnFuturo && (

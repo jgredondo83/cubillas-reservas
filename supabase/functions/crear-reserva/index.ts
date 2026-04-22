@@ -225,17 +225,21 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 11. Bloqueos admin
-    const { data: bloqueos } = await supabase
+    // 11. Bloqueos de franja (nuevo schema: fecha_inicio/fin + hora_inicio/fin)
+    const { data: bloqueosFranja } = await supabase
       .from('bloqueos')
-      .select('*')
+      .select('motivo')
+      .eq('comunidad_id', perfilObjetivo.comunidad_id)
       .eq('recurso_id', recurso_id)
-      .lt('inicio', finISO)
-      .gt('fin', inicioISO)
+      .eq('activo', true)
+      .lte('fecha_inicio', fecha)
+      .or(`fecha_fin.is.null,fecha_fin.gte.${fecha}`)
+      .lt('hora_inicio', finHHmm)
+      .gt('hora_fin', hora_inicio)
 
-    if (bloqueos && bloqueos.length > 0) {
-      const motivo = bloqueos[0].motivo || 'Franja bloqueada por administración'
-      return respuesta(409, `Franja bloqueada: ${motivo}`)
+    if (bloqueosFranja && bloqueosFranja.length > 0) {
+      const motivo = bloqueosFranja[0].motivo ?? 'Franja bloqueada por administración'
+      return respuesta(409, `Este recurso no está disponible en la franja solicitada. Motivo: ${motivo}. Contacta con administración si necesitas información.`)
     }
 
     // 12 + 13. Solapamiento (mismo espacio, no solo mismo recurso)

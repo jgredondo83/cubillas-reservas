@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import BannerAviso from '../components/BannerAviso'
 import { crearReserva } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import type { Recurso, FranjaOcupada, RecursoConfig } from '../types/database'
@@ -93,16 +94,22 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
         p_fecha_hasta: fechaISO(fechaHasta),
       }) as { data: FranjaOcupada[] | null }
 
-      // Bloqueos (columnas inicio/fin son timestamptz tras migración 005)
-      const diaInicio = new Date(fechaStr + 'T00:00:00').toISOString()
-      const diaFin = new Date(fechaStr + 'T23:59:59').toISOString()
-
+      // Bloqueos de franja (nuevo schema: fecha_inicio/fin + hora_inicio/hora_fin)
       const { data: bloqueos } = await supabase
         .from('bloqueos')
-        .select('inicio, fin, motivo')
+        .select('fecha_inicio, fecha_fin, hora_inicio, hora_fin, motivo')
         .in('recurso_id', recursoIds)
-        .gte('fin', diaInicio)
-        .lte('inicio', diaFin)
+        .eq('activo', true)
+        .lte('fecha_inicio', fechaStr)
+        .or(`fecha_fin.is.null,fecha_fin.gte.${fechaStr}`)
+
+      // Convertir al formato { inicio, fin, motivo } que espera generarFranjas
+      // Los strings sin timezone se parsean como hora local, igual que los timestamps de franjas
+      const bloqueosFranja = (bloqueos || []).map((b) => ({
+        inicio: `${fechaStr}T${b.hora_inicio}`,
+        fin: `${fechaStr}T${b.hora_fin}`,
+        motivo: b.motivo as string,
+      }))
 
       // Ventanas horarias: array de {desde, hasta}
       const ventanas = config.horario?.default || [{ desde: '09:00', hasta: '22:00' }]
@@ -112,7 +119,7 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
         duracion,
         ventanas,
         ocupadas || [],
-        (bloqueos || []).map((b) => ({ inicio: b.inicio, fin: b.fin, motivo: b.motivo })),
+        bloqueosFranja,
         config.horario_cruza_medianoche || false,
       )
 
@@ -226,6 +233,7 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
   return (
     <main className="min-h-screen bg-teal-50 py-6 px-4">
       <div className="max-w-md mx-auto">
+        <BannerAviso />
         {/* Banner reserva en nombre de otro */}
         {usuarioObjetivo && (
           <div className="bg-amber-900/50 border border-amber-700 text-amber-200 text-sm p-3 rounded-lg mb-4">

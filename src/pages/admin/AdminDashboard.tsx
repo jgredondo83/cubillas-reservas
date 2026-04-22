@@ -39,10 +39,18 @@ export default function AdminDashboard() {
   const [ocupacion, setOcupacion] = useState<OcupacionRecurso[]>([])
   const [cargandoStats, setCargandoStats] = useState(true)
   const [errorStats, setErrorStats] = useState(false)
+  const [avisoActivo, setAvisoActivo] = useState<{ id: string; titulo: string; tipo: string } | null>(null)
 
   useEffect(() => {
     cargarContadores()
     cargarEstadisticas()
+    supabase
+      .from('avisos')
+      .select('id, titulo, tipo')
+      .eq('activo', true)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setAvisoActivo(data ?? null))
   }, [])
 
   async function cargarContadores() {
@@ -190,6 +198,24 @@ export default function AdminDashboard() {
               </Link>
             ))}
           </div>
+
+          {/* Indicador aviso activo */}
+          <Link
+            to="/admin/avisos"
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 mb-4 border text-sm transition-colors hover:opacity-90 ${
+              avisoActivo
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
+                : 'bg-gray-50 border-gray-200 text-gray-500'
+            }`}
+          >
+            <span>{avisoActivo ? '📢' : '🔕'}</span>
+            <span className="flex-1">
+              {avisoActivo
+                ? <>Aviso activo: <strong>{avisoActivo.titulo}</strong></>
+                : 'Sin avisos activos ahora mismo'}
+            </span>
+            <span className="text-xs opacity-60">Gestionar →</span>
+          </Link>
 
           {/* Accesos rápidos */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">

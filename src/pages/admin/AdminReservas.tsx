@@ -384,9 +384,13 @@ export default function AdminReservas() {
                       <td className="px-4 py-3 text-gray-600">{formatHora(r.inicio)}–{formatHora(r.fin)}</td>
                       <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{r.recurso_nombre}</td>
                       <td className="px-4 py-3">
-                        <Link to={`/admin/usuarios/${r.usuario_id}`} className={`${tema.acento} hover:underline`}>
-                          {r.usuario_nombre} {r.usuario_apellidos}
-                        </Link>
+                        {r.usuario_id ? (
+                          <Link to={`/admin/usuarios/${r.usuario_id}`} className={`${tema.acento} hover:underline`}>
+                            {r.usuario_nombre} {r.usuario_apellidos}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400 italic">Vecino eliminado</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         <Link to={`/admin/viviendas/${r.vivienda_id}`} className={`text-gray-600 hover:${tema.acento} hover:underline`}>

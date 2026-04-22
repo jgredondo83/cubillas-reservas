@@ -9,6 +9,7 @@ import {
   emojiRecurso,
 } from '../lib/fechas'
 import DOMPurify from 'dompurify'
+import BannerAviso from '../components/BannerAviso'
 
 const ALLOWED_TAGS = ['strong', 'em', 'br', 'a']
 const ALLOWED_ATTR = ['href', 'target', 'rel']
@@ -68,6 +69,8 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-teal-700 mb-4">
           Hola, {perfil.nombre}
         </h1>
+
+        <BannerAviso />
 
         {perfil.estado === 'pendiente' && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-4 rounded-lg mb-4">

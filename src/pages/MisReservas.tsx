@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { cancelarReserva } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import BannerAviso from '../components/BannerAviso'
 import type { Reserva, Recurso } from '../types/database'
 import {
   formatoFechaLarga,
@@ -143,6 +144,7 @@ export default function MisReservas() {
   return (
     <main className="min-h-screen bg-teal-50 py-6 px-4">
       <div className="max-w-md mx-auto">
+        <BannerAviso />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-teal-700">Mis reservas</h1>
           <Link to="/" className="text-sm text-teal-600">← Inicio</Link>

@@ -24,6 +24,8 @@ import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
 import AdminTestEmails from './pages/admin/AdminTestEmails'
 import AdminNoPresentados from './pages/admin/AdminNoPresentados'
 import AdminTextos from './pages/admin/AdminTextos'
+import AdminAvisos from './pages/admin/AdminAvisos'
+import AdminBloqueosFranjas from './pages/admin/AdminBloqueosFranjas'
 import Perfil from './pages/Perfil'
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad'
 import AvisoLegal from './pages/AvisoLegal'
@@ -180,6 +182,22 @@ export default function App() {
             element={
               <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
                 <AdminTextos />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/avisos"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminAvisos />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bloqueos-franjas"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin', 'super_admin']}>
+                <AdminBloqueosFranjas />
               </ProtectedRoute>
             }
           />

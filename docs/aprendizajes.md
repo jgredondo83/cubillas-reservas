@@ -52,6 +52,36 @@ Apuntes de decisiones, bugs recurrentes y patrones útiles durante el desarrollo
   - **NO**: FK `ON DELETE CASCADE`.
 - Tablas afectadas en este proyecto: `reservas` (creado_por, cancelado_por, marcado_presentado_por), `logs_admin` (admin_id, target_id), `bloqueos` (creado_por), `avisos` (creado_por), `textos_admin` (updated_by).
 
+### Bug latente post-RGPD: relaciones anonimizadas pueden ser null en componentes
+
+Tras implementar el borrado por RGPD (SET NULL en `reservas.usuario_id`), cualquier componente que acceda a `reserva.usuarios.X` sin comprobar null puede romper en runtime con `Cannot read properties of null`.
+
+**Regla defensiva:** siempre tipar relaciones de tablas anonimizables como `T | null` y comprobar antes de acceder.
+
+- Detectado en: `TarjetaReservaGuarda.tsx` — crash en `/guarda/hoy` con `reserva.usuarios.nombre`.
+- También afectaba: `AdminReservas.tsx` — link `/admin/usuarios/null` cuando `usuario_id=null`.
+- Ya seguro antes del bug: `AdminNoPresentados.tsx` (ya tenía `u ? ... : 'vecino desconocido'`).
+
+**Patrón correcto:**
+```tsx
+// ❌ Rompe si el vecino fue eliminado
+{reserva.usuarios.nombre}
+
+// ✅ Tolerante a null
+{reserva.usuarios ? reserva.usuarios.nombre : '— Vecino eliminado —'}
+
+// ✅ Link seguro
+{r.usuario_id
+  ? <Link to={`/admin/usuarios/${r.usuario_id}`}>{r.usuario_nombre}</Link>
+  : <span className="italic text-gray-400">Vecino eliminado</span>
+}
+```
+
+**Checklist al añadir un componente que muestra datos de una reserva:**
+- ¿Accede a `.usuarios.*`? → comprobar null, mostrar fallback `— Vecino eliminado —`.
+- ¿Genera un link a `/admin/usuarios/:id`? → condicionar a `usuario_id != null`.
+- Los botones de acción (marcar asistencia, cancelar) funcionan sobre la reserva, no el usuario → siguen operativos.
+
 ### UPDATE con falta de campos relacionados
 - Al escribir un bloqueo con `bloqueado_hasta`, también hay que escribir `estado='bloqueado'` y `motivo_bloqueo`.
 - Si solo se escribe el timestamp, el check en `crear-reserva` ignora el bloqueo.

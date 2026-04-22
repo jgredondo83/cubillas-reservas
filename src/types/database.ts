@@ -131,12 +131,17 @@ export interface Reserva {
 
 export interface Bloqueo {
   id: string
+  comunidad_id: string
   recurso_id: string
-  inicio: string
-  fin: string
+  fecha_inicio: string  // YYYY-MM-DD
+  fecha_fin: string | null  // null = indefinido
+  hora_inicio: string  // HH:MM
+  hora_fin: string     // HH:MM
   motivo: string
-  creado_por: string
-  created_at: string
+  activo: boolean
+  creado_por: string | null
+  creado_en: string
+  actualizado_en: string
 }
 
 export interface TextoAdmin {
