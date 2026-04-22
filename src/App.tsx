@@ -24,6 +24,8 @@ import AdminViviendaNueva from './pages/admin/AdminViviendaNueva'
 import AdminTestEmails from './pages/admin/AdminTestEmails'
 import AdminNoPresentados from './pages/admin/AdminNoPresentados'
 import Perfil from './pages/Perfil'
+import PoliticaPrivacidad from './pages/PoliticaPrivacidad'
+import AvisoLegal from './pages/AvisoLegal'
 
 export default function App() {
   return (
@@ -198,6 +200,8 @@ export default function App() {
             }
           />
           <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+          <Route path="/aviso-legal" element={<AvisoLegal />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

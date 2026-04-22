@@ -121,21 +121,31 @@ export default function Dashboard() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-teal-100">
+        <div className="pt-4 border-t border-teal-100 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/mis-reservas" className="text-sm text-teal-600">
+                Mis reservas
+              </Link>
+              <Link to="/perfil" className="text-sm text-teal-600">
+                Mi perfil
+              </Link>
+            </div>
+            <button
+              onClick={signOut}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Cerrar sesión
+            </button>
+          </div>
           <div className="flex items-center gap-4">
-            <Link to="/mis-reservas" className="text-sm text-teal-600">
-              Mis reservas
+            <Link to="/politica-privacidad" className="text-xs text-gray-400 hover:text-gray-600">
+              Política de privacidad
             </Link>
-            <Link to="/perfil" className="text-sm text-teal-600">
-              Mi perfil
+            <Link to="/aviso-legal" className="text-xs text-gray-400 hover:text-gray-600">
+              Aviso legal
             </Link>
           </div>
-          <button
-            onClick={signOut}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Cerrar sesión
-          </button>
         </div>
       </div>
     </main>

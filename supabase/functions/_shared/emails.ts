@@ -296,3 +296,50 @@ export function plantillaReservaCancelada(p: PlantillaCanceladaParams): string {
 
   return htmlBase(titulo, contenido)
 }
+
+// ---------------------------------------------------------------------------
+// Plantilla: Cuenta eliminada (RGPD Art. 17)
+// ---------------------------------------------------------------------------
+
+export interface PlantillaCuentaEliminadaParams {
+  nombreVecino: string
+  fechaEliminacion: string // formateada, ej: "22 de abril de 2026"
+  datosContactoAdmin: string
+}
+
+export function plantillaCuentaEliminada(p: PlantillaCuentaEliminadaParams): string {
+  const titulo = 'Tu cuenta ha sido eliminada'
+
+  const contenido = `
+<tr>
+  <td style="padding:32px 32px 24px;">
+    <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#0f172a;">Cuenta eliminada</h1>
+    <p style="margin:0 0 20px;color:#475569;font-size:15px;">Hola <strong>${p.nombreVecino}</strong>,</p>
+    <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
+      Confirmamos que tu cuenta en <strong>Reservas Parque del Cubillas</strong> ha sido eliminada el <strong>${p.fechaEliminacion}</strong>.
+    </p>
+    <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
+      Todos tus datos personales han sido borrados de forma permanente de acuerdo con el Reglamento General de Protección de Datos (RGPD Art. 17).
+    </p>
+    <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.6;">
+      Las reservas pasadas en las que participaste se conservan de forma anónima únicamente con fines históricos y de gestión de la instalación.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f1f5f9;border-radius:6px;padding:16px;margin-bottom:24px;">
+      <tr>
+        <td>
+          <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">
+            Si crees que esta eliminación ha sido un error o tienes alguna pregunta, contacta con la administración de la comunidad.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+  <td style="padding:0 32px 28px;">
+    ${formatoContacto(p.datosContactoAdmin)}
+  </td>
+</tr>`
+
+  return htmlBase(titulo, contenido)
+}

@@ -26,6 +26,32 @@ Apuntes de decisiones, bugs recurrentes y patrones útiles durante el desarrollo
 - Sin el flag, Supabase devuelve 401 "UNAUTHORIZED_NO_AUTH_HEADER".
 - Verificar tras cada deploy con una llamada de prueba.
 
+### JWT en Edge Functions — verificación manual (ES256)
+- Bug recurrente de Supabase: la verificación automática de JWT en EF no soporta el algoritmo ES256.
+- Error que aparece: 401 "Unsupported JWT algorithm ES256".
+- FIX: desplegar SIEMPRE con `--no-verify-jwt` y verificar el token manualmente dentro de la función.
+- Patrón implementado en `supabase/functions/_shared/auth.ts`:
+  ```ts
+  const auth = await verificarJWT(req, supabaseAdmin)
+  if (auth.error) return respuesta(auth.status, { error: auth.error })
+  const { user } = auth
+  ```
+- Internamente usa `supabaseAdmin.auth.getUser(token)` con el service role key.
+- Aplica a TODAS las EF que requieran JWT de vecino: `exportar-mis-datos`, `eliminar-cuenta`.
+- Las EF de admin (llamadas desde el panel) también deben usar este patrón si verifican JWT.
+
+### Anonimización RGPD — SET NULL + NOT NULL se contradicen (error 23502)
+- Para que un usuario pueda ser eliminado con SET NULL en cascade, **todas** las columnas FK que apuntan a esa tabla deben permitir NULL.
+- Si tienen restricción NOT NULL, el DELETE falla con `ERROR 23502: null value in column "X" of relation "Y" violates not-null constraint`.
+- Apareció en `reservas.creado_por` (definida NOT NULL en schema original) aunque la FK ya era `ON DELETE SET NULL` desde mig 013.
+- FIX: `ALTER TABLE reservas ALTER COLUMN creado_por DROP NOT NULL` (+ resto de columnas en mig 024).
+
+**Checklist al añadir una FK hacia `usuarios`:**
+- ¿Quieres conservar el registro histórico anonimizado al borrar el usuario?
+  - **SÍ**: FK `ON DELETE SET NULL` + columna SIN `NOT NULL`.
+  - **NO**: FK `ON DELETE CASCADE`.
+- Tablas afectadas en este proyecto: `reservas` (creado_por, cancelado_por, marcado_presentado_por), `logs_admin` (admin_id, target_id), `bloqueos` (creado_por), `avisos` (creado_por), `textos_admin` (updated_by).
+
 ### UPDATE con falta de campos relacionados
 - Al escribir un bloqueo con `bloqueado_hasta`, también hay que escribir `estado='bloqueado'` y `motivo_bloqueo`.
 - Si solo se escribe el timestamp, el check en `crear-reserva` ignora el bloqueo.
