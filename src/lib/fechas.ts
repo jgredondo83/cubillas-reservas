@@ -100,12 +100,13 @@ export function generarFranjas(
   ocupadas: { inicio: string; fin: string }[],
   bloqueos: { inicio: string; fin: string; motivo: string }[],
   horarioCruzaMedianoche: boolean = false,
+  margenHoyMs: number = 0, // ocultar solo franjas ya pasadas; la EF valida el resto
 ): Franja[] {
   const franjas: Franja[] = []
   const paso = 30 // minutos
 
   const ahora = new Date()
-  const limiteHoy = new Date(ahora.getTime() + 60 * 60 * 1000) // +60min
+  const limiteHoy = new Date(ahora.getTime() + margenHoyMs)
 
   for (const ventana of ventanas) {
     const [hIni, mIni] = ventana.desde.split(':').map(Number)

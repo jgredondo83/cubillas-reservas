@@ -90,6 +90,7 @@ export default function GuardaNuevaReserva() {
           apellidos: vecinoSeleccionado.apellidos,
         }}
         rutaRetorno="/guarda/hoy"
+        callerRol="guarda"
       />
     )
   }

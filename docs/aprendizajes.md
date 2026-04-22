@@ -87,6 +87,26 @@ Tras implementar el borrado por RGPD (SET NULL en `reservas.usuario_id`), cualqu
 - Si solo se escribe el timestamp, el check en `crear-reserva` ignora el bloqueo.
 - Lección: cuando un cambio toca múltiples campos relacionados, escribirlos siempre juntos como bloque atómico.
 
+## Reglas de negocio
+
+### Antelación de reservas: vecinos vs admin/guarda
+
+Reglas del reglamento de la comunidad:
+- **Pádel**: antelación mínima 0 días, máxima 3 días. Vecinos pueden reservar hoy mismo.
+- **Tenis**: antelación mínima 0 días, máxima 7 días. Vecinos pueden reservar hoy mismo.
+- **Club Social**: antelación mínima 3 días, máxima 365 días. Necesitan tiempo para gestionar pago, fianza y entrega de llaves.
+- **Admin/guarda**: sin restricciones de antelación (mínima ni máxima). Hard cap de 365 días. Pueden reservar franjas que comiencen en cualquier momento (tolerancia 60s para race conditions).
+
+Configuración en `recursos.config`: `antelacion_dias` (máxima) y `antelacion_minima_dias` (mínima, default 0).
+
+La condición en EF `crear-reserva`:
+```js
+const aplicarRestriccionesAntelacion = perfilObjetivo.rol === 'vecino' && perfil.rol === 'vecino'
+```
+Si el caller es admin/guarda creando reserva a nombre de un vecino, tampoco se aplican restricciones.
+
+En frontend (`Reservar.tsx`), el date picker usa `generarDias(365, 0)` para privilegiados y `generarDias(antelacion_dias, antelacion_minima_dias)` para vecinos. Los slots del día de hoy: se ocultan solo los ya pasados (margen = 0ms), sin buffer adicional.
+
 ## Decisiones no obvias
 
 ### FK reservas.usuario_id con SET NULL
