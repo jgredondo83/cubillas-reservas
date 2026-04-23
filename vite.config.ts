@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'icon.svg', 'icons/icon-180x180.png'],
       manifest: {
         name: 'Reservas Parque del Cubillas',
         short_name: 'Reservas Cubillas',

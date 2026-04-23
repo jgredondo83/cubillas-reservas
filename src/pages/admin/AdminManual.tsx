@@ -477,7 +477,7 @@ export default function AdminManual() {
         </nav>
 
         {/* Contenido */}
-        <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl p-5 md:p-6">
+        <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl p-4 md:p-6 break-words">
           {SECCIONES[activa].componente}
         </div>
       </div>

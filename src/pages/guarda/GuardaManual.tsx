@@ -281,28 +281,9 @@ export default function GuardaManual() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex gap-6">
-        {/* Sidebar desktop */}
-        <nav className="hidden md:block w-56 shrink-0">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-            {SECCIONES.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => setSeccionActiva(i)}
-                className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-slate-700 last:border-b-0 ${
-                  seccionActiva === i
-                    ? 'bg-teal-700 text-white font-medium'
-                    : 'text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {s.titulo}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Selector móvil */}
-        <div className="md:hidden w-full mb-4">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* Selector móvil — fuera del flex para ocupar ancho completo */}
+        <div className="md:hidden mb-4">
           <select
             value={seccionActiva}
             onChange={(e) => setSeccionActiva(Number(e.target.value))}
@@ -314,29 +295,51 @@ export default function GuardaManual() {
           </select>
         </div>
 
-        {/* Contenido */}
-        <div className="flex-1 min-w-0">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            {SECCIONES[seccionActiva].componente}
-          </div>
+        {/* Layout: sidebar desktop + contenido */}
+        <div className="flex gap-6">
+          {/* Sidebar desktop */}
+          <nav className="hidden md:block w-56 shrink-0">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+              {SECCIONES.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSeccionActiva(i)}
+                  className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-slate-700 last:border-b-0 ${
+                    seccionActiva === i
+                      ? 'bg-teal-700 text-white font-medium'
+                      : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {s.titulo}
+                </button>
+              ))}
+            </div>
+          </nav>
 
-          {/* Navegación entre secciones */}
-          <div className="flex justify-between mt-4">
-            <button
-              onClick={() => setSeccionActiva((i) => Math.max(0, i - 1))}
-              disabled={seccionActiva === 0}
-              className="text-sm text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-colors"
-            >
-              ← Anterior
-            </button>
-            <span className="text-xs text-slate-500">{seccionActiva + 1} / {SECCIONES.length}</span>
-            <button
-              onClick={() => setSeccionActiva((i) => Math.min(SECCIONES.length - 1, i + 1))}
-              disabled={seccionActiva === SECCIONES.length - 1}
-              className="text-sm text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-colors"
-            >
-              Siguiente →
-            </button>
+          {/* Contenido */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 p-4 md:p-6 break-words">
+              {SECCIONES[seccionActiva].componente}
+            </div>
+
+            {/* Navegación entre secciones */}
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => setSeccionActiva((i) => Math.max(0, i - 1))}
+                disabled={seccionActiva === 0}
+                className="text-sm text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-colors"
+              >
+                ← Anterior
+              </button>
+              <span className="text-xs text-slate-500">{seccionActiva + 1} / {SECCIONES.length}</span>
+              <button
+                onClick={() => setSeccionActiva((i) => Math.min(SECCIONES.length - 1, i + 1))}
+                disabled={seccionActiva === SECCIONES.length - 1}
+                className="text-sm text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-colors"
+              >
+                Siguiente →
+              </button>
+            </div>
           </div>
         </div>
       </div>

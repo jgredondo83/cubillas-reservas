@@ -144,7 +144,7 @@ export function generarFranjas(
       }
       fin.setHours(hF, mF, 0, 0)
 
-      // Excluir franjas pasadas (para hoy, margen de 60 min)
+      // Excluir franjas cuyo inicio ya pasó (margenHoyMs=0: ocultar solo las pasadas, la EF valida el resto)
       if (esHoy(fecha) && inicio < limiteHoy) {
         continue
       }

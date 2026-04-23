@@ -81,7 +81,7 @@ export default function Dashboard() {
         {/* Mensaje de bienvenida */}
         {mensajeBienvenida && (
           <div
-            className="bg-teal-50 border border-teal-200 text-teal-800 text-sm p-4 rounded-lg mb-4 leading-relaxed"
+            className="bg-teal-50 border border-teal-200 text-teal-800 text-sm p-4 rounded-lg mb-4 leading-relaxed [&_a]:text-teal-600 [&_a]:underline [&_a]:hover:text-teal-800"
             dangerouslySetInnerHTML={{ __html: mensajeBienvenida }}
           />
         )}
