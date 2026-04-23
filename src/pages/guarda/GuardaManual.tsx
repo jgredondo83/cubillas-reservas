@@ -144,7 +144,7 @@ function CrearReserva() {
     <div>
       <H2>5. Crear nueva reserva</H2>
       <P>
-        Puedes crear una reserva a nombre de cualquier vecino sin restricciones de antelación.
+        Puedes crear una reserva a nombre de cualquier vecino. Se aplican las mismas reglas que si el vecino reservara desde su móvil.
       </P>
       <Ol>
         <li>Pulsa <strong>+ Reserva</strong> en la cabecera del panel.</li>
@@ -153,12 +153,17 @@ function CrearReserva() {
         <li>Selecciona la franja horaria disponible.</li>
         <li>Confirma la reserva.</li>
       </Ol>
-      <H3>Diferencias con la reserva de un vecino</H3>
+      <H3>Restricciones que aplican</H3>
       <Ul>
-        <li>No hay límite de antelación mínima ni máxima (salvo 1 año).</li>
-        <li>Puedes reservar franjas que ya han comenzado (margen de 60 segundos).</li>
-        <li>La reserva queda registrada como creada por ti, no por el vecino.</li>
+        <li><strong>Pádel</strong>: máximo 3 días de antelación.</li>
+        <li><strong>Tenis</strong>: máximo 7 días de antelación.</li>
+        <li><strong>Club Social</strong>: mínimo 3 días, máximo 365 días de antelación.</li>
+        <li>El vecino no debe estar bloqueado ni tener la vivienda con impago.</li>
+        <li>La vivienda no puede superar el límite de reservas activas del recurso.</li>
       </Ul>
+      <Info>
+        La reserva queda registrada como creada por ti. Si necesitas saltar alguna restricción (por ejemplo, reservar con menos antelación), pídelo al administrador.
+      </Info>
     </div>
   )
 }
