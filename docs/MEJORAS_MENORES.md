@@ -37,3 +37,10 @@
   * En ambos, al desbloquear, restaurar desde estado_previo.
 
   - [ ] UX: si el vecino está bloqueado, el botón "Confirmar reserva" al final del wizard debe estar deshabilitado (no clickable) mientras se muestra el mensaje de bloqueo. Actualmente sigue activo y no hace nada al pulsar (la EF rechaza con 403, pero es confuso visualmente).
+
+## UX Mobile
+
+- [ ] Manual del guarda en móvil: texto sale en columna muy estrecha cortando palabras. El layout no es responsive bien. Arreglar en QA del día 11.
+- [ ] Manual del guarda en móvil: la sección por defecto debería abrirse automáticamente, no quedar colapsada.
+- [ ] Revisar Manual del admin también en móvil por el mismo problema.
+- [ ] Revisar fondos oscuros con texto claro — contraste y legibilidad.
