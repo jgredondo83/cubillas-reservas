@@ -89,23 +89,24 @@ Tras implementar el borrado por RGPD (SET NULL en `reservas.usuario_id`), cualqu
 
 ## Reglas de negocio
 
-### Antelación de reservas: vecinos vs admin/guarda
+### Antelación de reservas: quién puede saltarse las reglas
 
 Reglas del reglamento de la comunidad:
 - **Pádel**: antelación mínima 0 días, máxima 3 días. Vecinos pueden reservar hoy mismo.
 - **Tenis**: antelación mínima 0 días, máxima 7 días. Vecinos pueden reservar hoy mismo.
 - **Club Social**: antelación mínima 3 días, máxima 365 días. Necesitan tiempo para gestionar pago, fianza y entrega de llaves.
-- **Admin/guarda**: sin restricciones de antelación (mínima ni máxima). Hard cap de 365 días. Pueden reservar franjas que comiencen en cualquier momento (tolerancia 60s para race conditions).
+- **Admin/super_admin**: sin restricciones de antelación (mínima ni máxima). Hard cap de 365 días. Tolerancia 60s para race conditions. Pueden usar `forzar=true` para saltar el límite de reservas activas.
+- **Guarda**: MISMAS restricciones que el vecino. El guarda simplemente opera en nombre del vecino desde la garita; no tiene privilegios de antelación.
 
 Configuración en `recursos.config`: `antelacion_dias` (máxima) y `antelacion_minima_dias` (mínima, default 0).
 
 La condición en EF `crear-reserva`:
 ```js
-const aplicarRestriccionesAntelacion = perfilObjetivo.rol === 'vecino' && perfil.rol === 'vecino'
+const callerPuedeSaltarReglas = perfil.rol === 'admin' || perfil.rol === 'super_admin'
 ```
-Si el caller es admin/guarda creando reserva a nombre de un vecino, tampoco se aplican restricciones.
+Si el caller es admin/super_admin, puede saltar restricciones. Guarda y vecino: siempre aplican las reglas del recurso.
 
-En frontend (`Reservar.tsx`), el date picker usa `generarDias(365, 0)` para privilegiados y `generarDias(antelacion_dias, antelacion_minima_dias)` para vecinos. Los slots del día de hoy: se ocultan solo los ya pasados (margen = 0ms), sin buffer adicional.
+En frontend (`Reservar.tsx`), el date picker usa `generarDias(365, 0)` para `esPrivilegiado` (admin/super_admin) y `generarDias(antelacion_dias, antelacion_minima_dias)` para vecinos y guarda. Los slots del día de hoy: se ocultan solo los ya pasados (margen = 0ms), sin buffer adicional.
 
 ## Decisiones no obvias
 

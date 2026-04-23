@@ -112,7 +112,7 @@ function MarcarAsistencia() {
       </P>
       <Aviso>
         El sistema de no-presentados es automático: si una reserva pasada no tiene asistencia marcada, el vecino acumula un
-        no-presentado. Tres no-presentados bloquean la cuenta. Por eso es importante marcar siempre la asistencia.
+        no-presentado. <strong>2 no-presentados en 30 días bloquean la cuenta durante 7 días.</strong> Por eso es importante marcar siempre la asistencia.
       </Aviso>
     </div>
   )

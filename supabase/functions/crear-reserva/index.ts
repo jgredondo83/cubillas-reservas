@@ -182,19 +182,21 @@ Deno.serve(async (req: Request) => {
     }
 
     // 9. Antelación y franja pasada
-    // - Vecinos (caller=vecino y objetivo=vecino): aplican antelacion_minima_dias y antelacion_dias
-    //   del recurso. No pueden reservar franjas ya pasadas.
-    // - Admin/guarda: sin restricciones del recurso. Hard cap 365 días.
-    //   Tolerancia de 60s para franjas que acaban de comenzar (race condition).
+    // - Solo admin/super_admin pueden saltarse las restricciones del recurso.
+    //   Con forzar=true saltan además el límite de reservas activas (step 14).
+    // - Guarda reservando para un vecino: MISMAS restricciones que el vecino.
+    //   El guarda simplemente opera en nombre del vecino desde la garita.
+    // - Vecino para sí mismo: todas las restricciones del recurso.
     const ahora = new Date()
     const hoyMedianoche = new Date(ahora)
     hoyMedianoche.setHours(0, 0, 0, 0)
     const fechaObj = new Date(`${fecha}T00:00:00`)
     const diffDias = Math.floor((fechaObj.getTime() - hoyMedianoche.getTime()) / 86400000)
 
-    const aplicarRestriccionesAntelacion = perfilObjetivo.rol === 'vecino' && perfil.rol === 'vecino'
+    const callerPuedeSaltarReglas = perfil.rol === 'admin' || perfil.rol === 'super_admin'
 
-    if (aplicarRestriccionesAntelacion) {
+    if (!callerPuedeSaltarReglas) {
+      // Vecino o guarda: aplican restricciones del recurso para el perfil objetivo
       const antelacionMax = (config.antelacion_dias as number) ?? 7
       const antelacionMin = (config.antelacion_minima_dias as number) ?? 0
 
@@ -204,16 +206,14 @@ Deno.serve(async (req: Request) => {
       if (diffDias > antelacionMax) {
         return respuesta(400, `Esta reserva no puede hacerse con más de ${antelacionMax} días de antelación.`)
       }
-      // No se permite reservar en el pasado
       if (inicio < ahora) {
         return respuesta(400, 'No se puede reservar una franja que ya ha pasado.')
       }
     } else {
-      // Admin/guarda: hard cap 365 días
+      // Admin/super_admin: hard cap 365 días, tolerancia 60s para race conditions
       if (diffDias > 365) {
         return respuesta(400, 'No se permiten reservas con más de 1 año de antelación.')
       }
-      // Tolerancia de 60s para race conditions (pueden reservar franjas que acaban de empezar)
       if (inicio < new Date(Date.now() - 60000)) {
         return respuesta(400, 'No se puede reservar una franja que ya ha pasado.')
       }

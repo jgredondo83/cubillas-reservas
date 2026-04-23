@@ -215,11 +215,11 @@ export default function Reservar({ usuarioObjetivo, rutaRetorno, callerRol }: Pr
     }
   }
 
-  // Admin/guarda pueden reservar hasta 365 días sin mínimo; vecinos usan config del recurso.
+  // Solo admin/super_admin pueden saltarse las restricciones de antelación del recurso.
+  // El guarda usa el mismo rango de fechas que el vecino (mismas reglas).
   const esPrivilegiado =
     callerRol === 'admin' ||
-    callerRol === 'guarda' ||
-    ['admin', 'super_admin', 'guarda'].includes(perfil?.rol ?? '')
+    ['admin', 'super_admin'].includes(perfil?.rol ?? '')
 
   const dias = config
     ? generarDias(
